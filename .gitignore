@@ -5,12 +5,24 @@ build/
 dist/
 wheels/
 *.egg-info
+.vscode/
+.DS_Store
 
 # Virtual environments
 .venv
 
-.env
+# Data
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# MLflow / artifacts
 mlruns/
+artifacts/
+
+# Notebooks checkpoints
 .ipynb_checkpoints/
-.vscode/
-.DS_Store
+
+# Env
+.env

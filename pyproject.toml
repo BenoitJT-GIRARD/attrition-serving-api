@@ -60,7 +60,10 @@ serve = [
 
 [tool.ruff]
 line-length = 100
-extend-select = ["I"]  # import sorting
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
 
 [tool.ruff.format]
 quote-style = "double"
