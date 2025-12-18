@@ -27,6 +27,12 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
             out["augmentation_salaire_precedente"]
         )
 
+    # --- genre : "F"/"M" -> 0/1 (si nécessaire)
+    if "genre" in out.columns:
+        g = out["genre"].astype(str).str.strip().str.upper()
+        if set(g.dropna().unique()).issubset({"F", "M"}):
+            out["genre"] = g.map({"F": 0, "M": 1}).astype("Int64")
+
     # --- Drop constants (as requested, but safe if names differ)
     out = drop_constant_columns(out, candidates=["nombre_heures_travailless", "ayant_enfants"])
 
