@@ -33,6 +33,8 @@ db = [
 ]
 dev = [
     "bandit>=1.9.2",
+    "ipykernel>=7.1.0",
+    "jupyter>=1.1.1",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
