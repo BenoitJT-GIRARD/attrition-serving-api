@@ -44,7 +44,7 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
         ).astype("Int64")
 
     # --- Probabilités/ratios normalisés
-    # ⚠️ Tes colonnes peuvent s'appeler "nombre_experiences_precedents" ou "...precedentes"
+    # ⚠️ Les colonnes peuvent s'appeler "nombre_experiences_precedents" ou "...precedentes"
     exp_col = None
     for cand in ["nombre_experiences_precedents", "nombre_experiences_precedentes"]:
         if cand in out.columns:

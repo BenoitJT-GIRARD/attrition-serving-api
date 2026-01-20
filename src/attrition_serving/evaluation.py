@@ -46,6 +46,7 @@ def plot_precision_recall(y_true, p_hat):
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.tight_layout()
+    plt.show()
 
 
 def find_threshold_for_recall(y_true, p_hat, target_recall: float = 0.80) -> float:
