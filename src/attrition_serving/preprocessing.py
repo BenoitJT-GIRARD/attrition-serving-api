@@ -32,7 +32,7 @@ class FeatureGroups:
 def _log1p_safe(X):
     # X arrive en array 2D
     X = np.asarray(X, dtype=float)
-    # évite log sur négatifs : on clip à 0 (au pire tu documentes la décision)
+    # évite log sur négatifs : on clip à 0 (au pire on documente la décision)
     X = np.clip(X, a_min=0, a_max=None)
     return np.log1p(X)
 
@@ -63,7 +63,7 @@ def build_preprocessor(groups: FeatureGroups) -> ColumnTransformer:
     bin_pipe = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
-            # passthrough ensuite, pas besoin de scaler
+            ("scaler", StandardScaler()),
         ]
     )
 
@@ -78,7 +78,7 @@ def build_preprocessor(groups: FeatureGroups) -> ColumnTransformer:
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
             ("ord", OrdinalEncoder(categories=groups.ord_categories)),
-            # pas de scaler (tu veux interpréter les coefficients)
+            ("scaler", StandardScaler()),
         ]
     )
 

@@ -49,6 +49,7 @@ def plot_categorical_share(df: pd.DataFrame, col: str, target: str | None = None
         ax.set_xlabel(col)
         ax.set_ylabel("Count")
         plt.tight_layout()
+        plt.show()
         return
 
     require_columns(df, [target])
