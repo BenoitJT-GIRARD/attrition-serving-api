@@ -16,9 +16,13 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/api_test/
+data/processed/api_test/*
+!data/processed/api_test/*_sample.json
 
 # MLflow / artifacts
 mlruns/
+models/*.joblib
 artifacts/
 
 # Notebooks checkpoints
@@ -26,5 +30,3 @@ artifacts/
 
 # Env
 .env
-
-models/*.joblib
