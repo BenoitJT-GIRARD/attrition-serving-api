@@ -7,7 +7,7 @@ from attrition_serving.env import load_env
 
 
 def main() -> None:
-    load_env(".env.supabase")  # ou ".env.local"
+    load_env()
 
     engine = get_engine()
     with engine.connect() as conn:
