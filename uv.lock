@@ -4189,6 +4189,7 @@ db = [
 ]
 dev = [
     { name = "bandit" },
+    { name = "httpx" },
     { name = "ipykernel" },
     { name = "jupyter" },
     { name = "pre-commit" },
@@ -4236,6 +4237,7 @@ db = [
 ]
 dev = [
     { name = "bandit", specifier = ">=1.9.2" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "pre-commit", specifier = ">=4.5.1" },
