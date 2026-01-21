@@ -23,6 +23,7 @@ data/processed/api_test/*
 # MLflow / artifacts
 mlruns/
 models/*.joblib
+!models/pipeline.joblib
 artifacts/
 
 # Notebooks checkpoints
