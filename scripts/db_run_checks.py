@@ -7,7 +7,7 @@ from attrition_serving.env import load_env
 
 
 def main():
-    load_env(".env.local")  # ou ".env.supabase"
+    load_env()
     engine = get_engine()
     sql_path = Path("sql/serving/02_seed_checks.sql")
     sql = sql_path.read_text(encoding="utf-8")

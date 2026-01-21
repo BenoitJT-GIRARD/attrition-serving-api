@@ -33,3 +33,8 @@ artifacts/
 .env
 .env.local
 .env.supabase
+
+# Coverage reports
+.coverage
+htmlcov/
+reports/coverage_html/

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -13,25 +14,25 @@ EXPECTED_PATH = Path("models/expected_features.json")
 SAMPLE_PATH = Path("data/processed/api_test/X_test_sample.json")
 
 
-def main(reset: bool = True) -> None:
-    load_env(".env.supabase")  # ou ".env.local"
+def main(reset: bool | None = None) -> None:
+    load_env()  # utilise ENV_FILE
+
+    # reset par défaut : True si local, False sinon
+    env_file = os.getenv("ENV_FILE", ".env.local")
+    if reset is None:
+        reset = env_file == ".env.local"
 
     engine = get_engine()
     expected = json.loads(EXPECTED_PATH.read_text(encoding="utf-8"))
 
-    # X_test_sample.json doit être un JSON "records": [{...}, {...}]
     rows = json.loads(SAMPLE_PATH.read_text(encoding="utf-8"))
     df = pd.DataFrame(rows)
 
-    # S'assure que toutes les features attendues existent
     for col in expected:
         if col not in df.columns:
             df[col] = None
 
-    # Garde uniquement les features attendues, dans l'ordre exact
     df = df[expected].copy()
-
-    # IDs stables (1..N)
     df.insert(0, "employee_id", range(1, len(df) + 1))
 
     payloads = [
@@ -44,7 +45,6 @@ def main(reset: bool = True) -> None:
 
     with engine.begin() as conn:
         if reset:
-            # reset pour POC / démo
             conn.execute(text("DELETE FROM predictions;"))
             conn.execute(text("DELETE FROM employees;"))
 
@@ -56,8 +56,11 @@ def main(reset: bool = True) -> None:
         )
         conn.execute(stmt, payloads)
 
-    print(f"✅ Seed OK (sample): {len(payloads)} employees inserted from {SAMPLE_PATH}")
+    print(
+        f"✅ Seed OK: {len(payloads)} employees inserted from {SAMPLE_PATH} "
+        f"(ENV_FILE={env_file}, reset={reset})"
+    )
 
 
 if __name__ == "__main__":
-    main(reset=True)
+    main(reset=None)

@@ -9,8 +9,7 @@ from attrition_serving.env import load_env
 
 
 def main() -> None:
-    # Choix explicite de l'environnement
-    load_env(".env.supabase")  # ou ".env.local"
+    load_env()
 
     engine = get_engine()
     sql_path = Path("sql/serving/01_schema.sql")

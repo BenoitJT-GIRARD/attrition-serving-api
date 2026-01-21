@@ -69,3 +69,8 @@ def get_config() -> AppConfig:
         pipeline_path=pipeline_path,
         model_card_path=model_card_path,
     )
+
+
+def reset_config_cache() -> None:
+    """Utile pour les tests: force get_config() à relire les variables d'environnement."""
+    get_config.cache_clear()
