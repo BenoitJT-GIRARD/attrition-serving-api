@@ -30,3 +30,5 @@ artifacts/
 
 # Env
 .env
+.env.local
+.env.supabase
