@@ -1,13 +1,37 @@
-name: Deploy to Hugging Face Space
+name: CI
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [develop, main]
+  pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: attrition
+          POSTGRES_PASSWORD: attrition_pwd
+          POSTGRES_DB: attrition_serving
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U attrition -d attrition_serving"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # IMPORTANT: en CI, localhost:5432 pointe vers le service Postgres
+      DATABASE_URL: postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving
+      API_KEY: test_key
+      MODEL_THRESHOLD: "0.5"
+      MODEL_VERSION: "ci"
+      SKIP_DOTENV: "1"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,27 +43,11 @@ jobs:
       - name: Install deps (dev + serve + db)
         run: uv sync --frozen --group dev --group serve --group db
 
+      - name: Apply DB schema
+        run: uv run python scripts/db_apply_schema.py
+
+      - name: Seed employees (safe sample)
+        run: uv run python scripts/db_seed_employees.py
+
       - name: Run tests
         run: uv run pytest -q
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Push to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE: ${{ secrets.HF_SPACE }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          # Push main -> Space main
-          git remote add hf https://huggingface.co/spaces/${HF_SPACE}
-
-          # Use token as password over HTTPS basic auth
-          git push https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE} HEAD:main

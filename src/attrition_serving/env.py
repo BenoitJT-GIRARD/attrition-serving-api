@@ -14,13 +14,20 @@ def load_env(default_env_file: str = ".env.local") -> None:
     """
     Charge .env puis un override (ENV_FILE) : .env.local ou .env.supabase.
 
-    - En prod/dev/scripts : on charge.
-    - En tests : SKIP_DOTENV=1 => on ne charge rien (tout vient de monkeypatch/env).
+    Règles:
+    - En CI/tests : SKIP_DOTENV=1 => on ne charge rien.
+    - Ne JAMAIS écraser une variable déjà définie (override=False),
+      sinon la CI/secrets peuvent être écrasés par un .env local.
+    - Ne charge un fichier que s'il existe (comportement robuste).
     """
     if os.getenv("SKIP_DOTENV", "") == "1":
         return
 
-    load_dotenv(ROOT / ".env", override=False)
+    base_path = ROOT / ".env"
+    if base_path.exists():
+        load_dotenv(base_path, override=False)
 
     env_file = os.getenv("ENV_FILE", default_env_file)
-    load_dotenv(ROOT / env_file, override=True)
+    env_path = ROOT / env_file
+    if env_path.exists():
+        load_dotenv(env_path, override=False)
