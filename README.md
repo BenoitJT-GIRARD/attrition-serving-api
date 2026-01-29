@@ -1,3 +1,9 @@
+---
+title: PrjPerso HR Attrition MLOps
+sdk: docker
+app_port: 7860
+---
+
 ## Database schema (serving)
 
 ```mermaid
