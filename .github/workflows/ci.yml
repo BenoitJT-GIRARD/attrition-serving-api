@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: attrition
+          POSTGRES_PASSWORD: attrition_pwd
+          POSTGRES_DB: attrition_serving
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U attrition"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # Important : on isole des .env locaux
+      SKIP_DOTENV: "1"
+
+      # DB CI (service postgres ci-dessus)
+      DATABASE_URL: postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving
+
+      # Clé API dummy pour tests
+      API_KEY: test_key
+
+      # Paramètres modèle (pas besoin des vrais)
+      MODEL_THRESHOLD: "0.5"
+      MODEL_VERSION: "ci"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: pipx install uv
+
+      - name: Sync dependencies (dev + db + serve)
+        run: uv sync --frozen --group dev --group db --group serve
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Apply DB schema
+        run: uv run python scripts/db_apply_schema.py
+
+      - name: Seed employees sample
+        run: uv run python scripts/db_seed_employees.py
+
+      - name: Run tests + coverage
+        run: uv run pytest --cov=src --cov-report=term-missing

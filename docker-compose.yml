@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: attrition_postgres
+    environment:
+      POSTGRES_USER: attrition
+      POSTGRES_PASSWORD: attrition_pwd
+      POSTGRES_DB: attrition_serving
+    ports:
+      - "5432:5432"
+    volumes:
+      - attrition_pgdata:/var/lib/postgresql/data
+      - ./data/raw:/data/raw:ro
+      - ./sql:/sql:ro
+
+volumes:
+  attrition_pgdata:

@@ -1,0 +1,14 @@
+{
+  "target": "a_quitte_l_entreprise",
+  "model_type": "logistic_regression",
+  "final_params": {
+    "model__C": 0.1,
+    "model__l1_ratio": 0.0
+  },
+  "default_threshold": 0.32,
+  "n_train": 1323,
+  "n_test": 147,
+  "train_ap": 0.681944088343915,
+  "test_ap": 0.5460021752541807,
+  "expected_n_features_raw": 37
+}

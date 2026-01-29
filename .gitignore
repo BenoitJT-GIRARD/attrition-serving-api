@@ -5,12 +5,36 @@ build/
 dist/
 wheels/
 *.egg-info
+.vscode/
+.DS_Store
 
 # Virtual environments
 .venv
 
-.env
+# Data
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/api_test/
+data/processed/api_test/*
+!data/processed/api_test/*_sample.json
+
+# MLflow / artifacts
 mlruns/
+models/*.joblib
+!models/pipeline.joblib
+artifacts/
+
+# Notebooks checkpoints
 .ipynb_checkpoints/
-.vscode/
-.DS_Store
+
+# Env
+.env
+.env.local
+.env.supabase
+
+# Coverage reports
+.coverage
+htmlcov/
+reports/coverage_html/
