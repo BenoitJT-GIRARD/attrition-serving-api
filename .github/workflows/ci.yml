@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop]
   pull_request:
 
 jobs:
@@ -19,18 +19,18 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U attrition -d attrition_serving"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
+          --health-cmd "pg_isready -U attrition -d attrition_serving"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
-      # IMPORTANT: en CI, localhost:5432 pointe vers le service Postgres
-      DATABASE_URL: postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving
-      API_KEY: test_key
+      SKIP_DOTENV: "1"
+      API_KEY: "test_key"
       MODEL_THRESHOLD: "0.5"
       MODEL_VERSION: "ci"
-      SKIP_DOTENV: "1"
+      DATABASE_URL: "postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving"
+      ENV_FILE: ".env.local"
 
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +43,10 @@ jobs:
       - name: Install deps (dev + serve + db)
         run: uv sync --frozen --group dev --group serve --group db
 
-      - name: Apply DB schema
+      - name: Apply schema
         run: uv run python scripts/db_apply_schema.py
 
-      - name: Seed employees (safe sample)
+      - name: Seed employees (no reset in CI)
         run: uv run python scripts/db_seed_employees.py
 
       - name: Run tests
