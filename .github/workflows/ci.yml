@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
   pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -22,32 +24,56 @@ jobs:
           --health-cmd "pg_isready -U attrition -d attrition_serving"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     env:
+      # On évite toute pollution par tes .env locaux
       SKIP_DOTENV: "1"
+
+      # Settings API (tests unitaires / intégration)
       API_KEY: "test_key"
       MODEL_THRESHOLD: "0.5"
       MODEL_VERSION: "ci"
+
+      # DB CI locale (service postgres)
       DATABASE_URL: "postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving"
-      ENV_FILE: ".env.local"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
           python-version: "3.12"
 
-      - name: Install deps (dev + serve + db)
+      - name: Install dependencies (dev + serve + db)
         run: uv sync --frozen --group dev --group serve --group db
 
-      - name: Apply schema
+      - name: Wait for Postgres
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          until pg_isready -h localhost -p 5432 -U attrition -d attrition_serving; do
+            echo "Waiting for postgres..."
+            sleep 1
+          done
+
+      - name: Apply DB schema
         run: uv run python scripts/db_apply_schema.py
 
-      - name: Seed employees (no reset in CI)
+      - name: Seed employees (safe sample)
         run: uv run python scripts/db_seed_employees.py
 
       - name: Run tests
         run: uv run pytest -q
+
+      - name: Coverage report (terminal + HTML)
+        run: |
+          uv run pytest --cov=src --cov-report=term-missing --cov-report=html:reports/coverage_html
+
+      - name: Upload coverage HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage_html
+          path: reports/coverage_html
