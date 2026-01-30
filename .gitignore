@@ -33,6 +33,7 @@ artifacts/
 .env
 .env.local
 .env.supabase
+.env.docker
 
 # Coverage reports
 .coverage
