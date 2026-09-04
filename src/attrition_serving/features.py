@@ -33,7 +33,8 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
         if set(g.dropna().unique()).issubset({"F", "M"}):
             out["genre"] = g.map({"F": 0, "M": 1}).astype("Int64")
 
-    # --- Drop constants (as requested, but safe if names differ)
+    # Constant columns carry no information a model can use, and one-hot encoding them
+    # adds a column that is always 1. Dropped by name-safe lookup.
     out = drop_constant_columns(out, candidates=["nombre_heures_travailless", "ayant_enfants"])
 
     # --- New feature: changement de poste
