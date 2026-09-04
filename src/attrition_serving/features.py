@@ -27,7 +27,7 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
             out["augmentation_salaire_precedente"]
         )
 
-    # --- genre : "F"/"M" -> 0/1 (si nécessaire)
+    # gender: "F"/"M" to 0/1 when the source has not already done it
     if "genre" in out.columns:
         g = out["genre"].astype(str).str.strip().str.upper()
         if set(g.dropna().unique()).issubset({"F", "M"}):
@@ -43,8 +43,9 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
             > pd.to_numeric(out["annees_dans_le_poste_actuel"], errors="coerce")
         ).astype("Int64")
 
-    # --- Probabilités/ratios normalisés
-    # ⚠️ Les colonnes peuvent s'appeler "nombre_experiences_precedents" ou "...precedentes"
+    # normalised ratios
+    # The source spells this column two ways depending on the extract, so both are
+    # accepted rather than one being assumed.
     exp_col = None
     for cand in ["nombre_experiences_precedents", "nombre_experiences_precedentes"]:
         if cand in out.columns:
@@ -76,12 +77,16 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_incoherence_metrics(df: pd.DataFrame) -> dict[str, float]:
-    """
-    Retourne des métriques simples (n et ratio) sur incohérences demandées.
+    """Count the rows whose career history contradicts itself.
+
+    Two checks, both on relations that must hold by construction. They are reported as a
+    count and a share rather than repaired: a row where total experience is shorter than
+    tenure is a data problem, and silently fixing it would hide how often the sources
+    disagree.
     """
     out = {}
 
-    # incohérence 1: exp_totale >= ancienneté >= années poste
+    # 1. total experience >= tenure at the company >= years in the current role
     needed = {"annee_experience_totale", "annees_dans_l_entreprise", "annees_dans_le_poste_actuel"}
     if needed.issubset(df.columns):
         a = pd.to_numeric(df["annee_experience_totale"], errors="coerce")
@@ -91,7 +96,7 @@ def compute_incoherence_metrics(df: pd.DataFrame) -> dict[str, float]:
         out["incoherence_hierarchy_count"] = float((~ok).sum())
         out["incoherence_hierarchy_ratio"] = float((~ok).mean())
 
-    # incohérence 2: si 0 expériences précédentes => exp_totale - ancienneté devrait être ~0
+    # 2. with no previous employer, total experience and tenure should coincide
     exp_col = None
     for cand in ["nombre_experiences_precedents", "nombre_experiences_precedentes"]:
         if cand in df.columns:
@@ -104,7 +109,8 @@ def compute_incoherence_metrics(df: pd.DataFrame) -> dict[str, float]:
         b = pd.to_numeric(df["annees_dans_l_entreprise"], errors="coerce")
         mask = exp_prev == 0
         gap = a - b
-        # proxy: proportion > 0 (tu as demandé “ratio > 0”)
+        # The share of rows where the gap is positive, which is the direction that
+        # indicates undeclared previous experience.
         out["gap_exp_minus_tenure_when_no_prev_ratio"] = (
             float((gap[mask] > 0).mean()) if mask.any() else np.nan
         )

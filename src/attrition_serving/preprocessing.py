@@ -12,20 +12,21 @@ from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, OrdinalEnc
 
 @dataclass(frozen=True)
 class FeatureGroups:
-    # Numériques continues (avec log sur certaines)
+    # Continuous, some log-transformed.
     num_cont: list[str]
     num_log: list[str]
 
-    # Numériques discrètes
+    # Discrete counts.
     num_disc: list[str]
 
-    # Binaires 0/1
+    # Booleans, already 0/1.
     bin_cols: list[str]
 
-    # Catégorielles nominales
+    # Nominal categoricals: one-hot.
     cat_nom: list[str]
 
-    # Ordinales (on garde le sens)
+    # Ordinal categoricals: encoded with their order declared, because the order is
+    # information and one-hot would throw it away.
     cat_ord: list[str]
     ord_categories: list[list]  # même longueur que cat_ord
 
@@ -33,7 +34,8 @@ class FeatureGroups:
 def _log1p_safe(X):
     # X arrive en array 2D
     X = np.asarray(X, dtype=float)
-    # évite log sur négatifs : on clip à 0 (au pire on documente la décision)
+    # log1p is undefined below -1. Negative values are clipped to zero rather than
+    # dropped, and the decision is written here rather than left to be rediscovered.
     X = np.clip(X, a_min=0, a_max=None)
     return np.log1p(X)
 
@@ -170,7 +172,8 @@ def make_feature_groups(df: pd.DataFrame, target: str) -> FeatureGroups:
         "evolution_note",
     ]
 
-    # Filtrage automatique : on ne garde que les colonnes présentes
+    # Keep only the columns this frame actually has, so a missing optional column is
+    # not a crash at fit time.
     num_cont = keep_existing(num_cont, X_cols)
     num_log = keep_existing(num_log, X_cols)
     num_disc = keep_existing(num_disc, X_cols)
@@ -178,7 +181,8 @@ def make_feature_groups(df: pd.DataFrame, target: str) -> FeatureGroups:
     cat_nom = keep_existing(cat_nom, X_cols)
     cat_ord = keep_existing(cat_ord, X_cols)
 
-    # Ordres ordinal : version simple = tri des valeurs uniques
+    # Ordinal order: the sorted unique values. That is right for the numeric-coded
+    # satisfaction scales here and would not be for a free-text category.
     # (tu pourras mettre un ordre métier explicite plus tard si besoin)
     ord_categories = [sorted(df[c].dropna().unique().tolist()) for c in cat_ord]
 

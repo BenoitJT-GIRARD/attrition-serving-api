@@ -13,7 +13,8 @@ def apply_schema(engine: Engine, schema_path: str = "sql/serving/01_schema.sql")
 
 
 def truncate_predictions(engine: Engine) -> None:
-    # On vide uniquement predictions (utile pour tests d'intégration)
+    # Only `predictions` is emptied. The employees table is seed data and clearing it
+    # would make the next test run silently score nothing.
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE TABLE predictions RESTART IDENTITY;"))
 
@@ -22,7 +23,8 @@ AllowedTable = Literal["employees", "predictions"]
 
 
 def count_rows(engine: Engine, table: AllowedTable) -> int:
-    # Whitelist stricte pour éviter toute injection SQL
+    # A closed set of table names: the value reaches an f-string, and a table name
+    # cannot be a bound parameter.
     queries = {
         "employees": "SELECT COUNT(*) FROM employees;",
         "predictions": "SELECT COUNT(*) FROM predictions;",

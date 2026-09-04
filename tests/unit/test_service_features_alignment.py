@@ -15,7 +15,7 @@ def test_expected_features_alignment_builds_ordered_df():
         "revenu_mensuel": 5000,
     }
 
-    # construire un DF aligned comme l’API est censée le faire
+    # build the frame the way the API is supposed to
     row = {f: payload.get(f, None) for f in expected}
     X = pd.DataFrame([row])[expected]
 

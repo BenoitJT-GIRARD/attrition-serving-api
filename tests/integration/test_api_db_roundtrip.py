@@ -14,7 +14,7 @@ def _count_predictions(engine) -> int:
 def _load_one_valid_payload() -> dict:
     rows = json.loads(SAMPLE_PATH.read_text(encoding="utf-8"))
     assert len(rows) > 0, "X_test_sample.json est vide"
-    # on prend la 1ère ligne
+    # the first row is enough: this asserts the round trip, not the model
     return {"features": rows[0]}
 
 

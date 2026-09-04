@@ -29,13 +29,13 @@ def load_pipeline():
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """
-    Normalise quelques champs sensibles pour éviter les erreurs de dtype.
-    Objectif: accepter des entrées humaines (M/F, Oui/Non) tout en nourrissant
-    le pipeline avec les mêmes types que l'entraînement.
+    Accept the shapes a human or another system actually sends -- "M", "Oui", "11%" --
+    and hand the pipeline the dtypes it was trained on. Without this the model receives a
+    string where it learned a number, and scikit-learn's error names a column, not a cause.
     """
     p = dict(payload)
 
-    # genre: attendu 0/1 dans ton sample (0=femme, 1=homme) -> on accepte M/F aussi
+    # gender: 0/1 in the training data. Letters are accepted and mapped.
     if "genre" in p:
         g = p["genre"]
         if isinstance(g, str):
@@ -47,7 +47,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(g, bool):
             p["genre"] = int(g)
 
-    # heure_supplementaires: attendu 0/1 dans ton sample -> on accepte Oui/Non/True/False
+    # overtime: 0/1 in the training data. Yes/no, in either language, is accepted.
     if "heure_supplementaires" in p:
         hs = p["heure_supplementaires"]
         if isinstance(hs, str):
@@ -59,7 +59,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(hs, bool):
             p["heure_supplementaires"] = int(hs)
 
-    # augmentation salaire: dans ton sample c'est une STRING type "11 %"
+    # last pay rise: a string like "11 %" in the training data, so a number has to be
+    # formatted back into one -- the encoder learned the string, not the value.
     # -> on accepte aussi 11 ou 0.11 et on convertit en "11 %"
     if "augementation_salaire_precedente" in p:
         a = p["augementation_salaire_precedente"]
@@ -79,9 +80,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 def check_payload(payload: dict[str, Any]) -> tuple[list[str], list[str]]:
     """
-    Vérifie que:
-    - toutes les features attendues sont présentes
-    - aucune n'est None
+    Report what a payload is missing: absent features, and present-but-null ones.
+
+    Returned rather than raised, so the caller can put both lists in one 422 instead of
+    making the client discover them one request at a time.
     """
     expected = get_expected_features()
     missing = [f for f in expected if f not in payload]

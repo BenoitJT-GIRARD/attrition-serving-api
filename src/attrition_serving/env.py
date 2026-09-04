@@ -16,7 +16,7 @@ def load_env(default_env_file: str = ".env.local") -> None:
     - En CI/tests : SKIP_DOTENV=1 => on ne charge rien.
     - Ne JAMAIS écraser une variable déjà définie (override=False),
       sinon la CI/secrets peuvent être écrasés par un .env local.
-    - Ne charge un fichier que s'il existe (comportement robuste).
+    - a file that does not exist is skipped rather than raising;
     """
     if os.getenv("SKIP_DOTENV", "") == "1":
         return

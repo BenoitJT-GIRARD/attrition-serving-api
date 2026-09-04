@@ -51,8 +51,9 @@ def plot_precision_recall(y_true, p_hat):
 
 def find_threshold_for_recall(y_true, p_hat, target_recall: float = 0.80) -> float:
     _precision, recall, thr = precision_recall_curve(y_true, p_hat)
-    # thr a une longueur (n-1), recall/precision longueur n
-    # on cherche le premier seuil qui atteint recall >= target
+    # `precision_recall_curve` returns one fewer threshold than it does points, hence
+    # the slice. The last index whose recall still clears the target is the highest
+    # threshold that meets it, which is the one that raises precision the most.
     idx = np.where(recall[:-1] >= target_recall)[0]
     if len(idx) == 0:
         return 0.5

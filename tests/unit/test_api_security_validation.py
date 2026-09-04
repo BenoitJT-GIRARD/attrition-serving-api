@@ -8,7 +8,7 @@ from attrition_serving.api import settings
 
 @pytest.fixture()
 def client(monkeypatch):
-    # 1) Empêche dotenv/.env.local de polluer les tests
+    # No dotenv: the test decides the configuration, not whatever is on this machine.
     monkeypatch.setenv("SKIP_DOTENV", "1")
 
     # 2) Force un environnement cohérent

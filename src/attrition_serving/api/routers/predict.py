@@ -33,12 +33,13 @@ def predict(req: PredictRequest, db: Session = Depends(get_db)):
     payload = normalize_payload(req.features)
     missing, nulls = check_payload(payload)
 
-    # On refuse les payloads incomplets -> 422 explicite (propre pour l’évaluation)
+    # An incomplete payload is refused rather than filled in. Imputing a missing
+    # feature at serving time silently changes what was scored.
     if missing or nulls:
         raise HTTPException(
             status_code=422,
             detail={
-                "message": "Payload incomplet ou valeurs nulles. Fournis toutes les features attendues.",
+                "message": "Incomplete payload or null values: every expected feature is required.",
                 "missing_features": missing,
                 "null_features": nulls,
                 "hint": "Utilise un record complet depuis data/processed/api_test/X_test_sample.json",
@@ -96,7 +97,10 @@ def predict_by_id(employee_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500,
             detail={
-                "message": "Features en DB incohérentes avec expected_features.json (seed à vérifier).",
+                "message": (
+                    "The features stored for this employee do not match "
+                    "expected_features.json. Re-run the seed script."
+                ),
                 "missing_features": missing,
                 "null_features": nulls,
             },

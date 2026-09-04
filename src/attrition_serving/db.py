@@ -7,8 +7,10 @@ from sqlalchemy import create_engine
 
 def get_database_url() -> str:
     """
-    Retourne DATABASE_URL si présent, sinon reconstruit depuis DB_*.
-    On ne charge PAS les .env ici : c'est le job de env.load_env() dans les scripts/app.
+    `DATABASE_URL` if it is set, otherwise rebuilt from the `DB_*` parts.
+
+    No dotenv is read here. Loading environment files is the caller's job, and doing it in
+    two places is how a script and the service end up talking to different databases.
     """
     url = os.getenv("DATABASE_URL")
     if url:

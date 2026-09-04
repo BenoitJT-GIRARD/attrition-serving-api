@@ -14,8 +14,10 @@ MODELS_DIR = ROOT / "models"
 
 def load_env(default_env_file: str = ".env.local") -> None:
     """
-    Charge d'abord .env (commun), puis un override (local/supabase) si présent.
-    Pourquoi: séparer config commune vs secrets d'environnement.
+    Read `.env` first, then the environment-specific file on top of it.
+
+    The split is deliberate: what is common to every deployment lives in the first, and
+    what is a secret of one deployment lives in the second, which is never committed.
     """
     load_dotenv(ROOT / ".env", override=False)
     env_file = os.getenv("ENV_FILE", default_env_file)
@@ -92,5 +94,5 @@ def get_config() -> AppConfig:
 
 
 def reset_config_cache() -> None:
-    """Utile pour les tests: force get_config() à relire les variables d'environnement."""
+    """Force `get_config()` to read the environment again. Used by the tests."""
     get_config.cache_clear()

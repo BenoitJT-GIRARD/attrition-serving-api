@@ -14,9 +14,11 @@ def permutation_importance_df(
     n_repeats: int = 20,
     random_state: int = 42,
 ) -> pd.DataFrame:
-    """
-    Permutation importance au niveau des FEATURES ORIGINALES (avant encodage),
-    ce qui est souvent le plus lisible pour une audience métier.
+    """Permutation importance over the *original* columns, before encoding.
+
+    Measured on the raw columns rather than the encoded ones on purpose: one-hot turns a
+    department into eight indicators, and eight small importances say much less to a reader
+    than one column named "department".
     """
     r = permutation_importance(
         pipeline,
@@ -48,9 +50,10 @@ def transform_X(pipeline, X):
 
 
 def shap_explain_tree_model(pipeline, X_background, X_explain):
-    """
-    SHAP pour modèles arbres (RandomForest / GBM) :
-    on explique le modèle sur les features APRÈS preprocessing.
+    """SHAP for tree models, on the features *after* preprocessing.
+
+    The tree explainer needs the matrix the model actually splits on, so unlike permutation
+    importance above, this one speaks in encoded feature names.
     """
     model = pipeline.named_steps["model"]
     Xb = transform_X(pipeline, X_background)
@@ -65,9 +68,10 @@ def shap_explain_tree_model(pipeline, X_background, X_explain):
 
 
 def shap_explain_linear_model(pipeline, X_background, X_explain):
-    """
-    SHAP pour régression logistique :
-    LinearExplainer sur les features APRÈS preprocessing.
+    """SHAP for the logistic regression, on the features after preprocessing.
+
+    For a linear model the SHAP value of a feature is its coefficient times its centred
+    value, so this is the coefficient view with the scaling put back in.
     """
     model = pipeline.named_steps["model"]
     Xb = transform_X(pipeline, X_background)
