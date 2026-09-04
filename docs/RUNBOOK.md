@@ -1,73 +1,107 @@
-# Runbook — Checklist Évaluation & Démo
+# Runbook — when the service answers badly
 
-## Objectif
-Pouvoir démontrer en 5 minutes :
-- API up + Swagger
-- Une prédiction fonctionne
-- La DB loggue
-- Les tests passent + coverage dispo
-- CI/CD existe (workflow + secrets)
+In order. Each step either produces a verdict or hands you to the next one.
 
----
+## 1. Is it up, or is it up and wrong?
 
-## A) Local — Démarrage DB
 ```bash
-docker compose up -d
-uv run python scripts/db_apply_schema.py
-uv run python scripts/db_seed_employees.py
-uv run python scripts/db_smoke_test.py
+curl -s localhost:8000/health
 ```
 
-**Preuve** :
+`/health` needs no key and touches neither the model nor the database, so a 200 here means
+the process is alive and nothing more. If it does not answer, the process is down: go to
+[the logs](#6-the-logs).
+
+## 2. Does it decide at the threshold it claims?
+
+This is the failure that once shipped, so it is the second thing to check rather than the
+last. The service reads `default_threshold` from the model card unless `MODEL_THRESHOLD`
+overrides it, and a prediction returns the threshold it used:
+
 ```bash
-docker exec -it attrition_postgres psql -U attrition -d attrition_serving -c "SELECT COUNT(*) FROM employees;"
+# one employee out of the ten committed fixtures, wrapped as the route expects
+python -c "import json; s=json.load(open('data/processed/api_test/X_test_sample.json')); print(json.dumps({'features': s[0]}))" > one.json
+
+curl -s localhost:8000/predict -H "X-API-Key: $API_KEY" \
+  -H 'Content-Type: application/json' -d @one.json \
+  | python -c "import json,sys; d=json.load(sys.stdin); print(d['threshold'], d['model_version'])"
+
+python -c "import json; print(json.load(open('models/model_card.json'))['default_threshold'])"
 ```
 
----
+The threshold the service reports and the one the card declares must agree. If they do not,
+an environment variable is overriding the card — check
+`MODEL_THRESHOLD` in the process environment, and in `.env.local` if one is loaded. A
+service that refuses to start is the intended behaviour when the card carries no threshold
+at all: serving an undocumented operating point is worse than not serving.
 
-## B) Local — Démarrage API
+`uv run pytest tests/unit/test_served_threshold_matches_artifact.py` asserts the same thing
+without a running service.
+
+## 3. Are the answers wrong, or just unexpected?
+
+`proba_depart` is calibrated: a value of 0.1 means about one departure in ten. If the
+distribution of returned probabilities looks shifted, compare it against what the model was
+scored on — mean predicted risk 0.163 against a base rate of 0.161, in
+`reports/evaluation_summary.json`. A mean well away from that means the traffic is not the
+population the model was fit on, not that the model broke.
+
+If the *decision* looks wrong while the probability looks right, it is the threshold, and
+step 2 is where that is settled.
+
+## 4. Is the model the one you think?
+
+Every prediction carries its `model_version`, and so does every row of `/history`. It comes
+from `MODEL_VERSION` when that is set and from the model card otherwise, so a version of
+`dev` in production means nothing set it.
+
+If the service failed to load the model at all, the first suspect is the library rather
+than the file: a scikit-learn pickle is only readable by a compatible scikit-learn, and the
+card records the version that wrote it.
+
 ```bash
-uv run uvicorn attrition_serving.api.main:app --reload --port 8000
+python -c "import sklearn, json; c=json.load(open('models/model_card.json')); print('card', c['sklearn_version'], '| here', sklearn.__version__)"
 ```
 
-**Preuve** :
-- http://localhost:8000/docs
+## 5. Is anything being written down?
 
----
-
-## C) Démo — Prediction + logging
-
-### Appel predict (avec API key)
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: <API_KEY>" \
-  -d '{"features":{"age":21,"genre":1,"revenu_mensuel":3447,"statut_marital":"Célibataire","departement":"Commercial","poste":"Représentant Commercial","nombre_experiences_precedentes":1,"annee_experience_totale":3,"annees_dans_l_entreprise":3,"annees_dans_le_poste_actuel":2,"satisfaction_employee_environnement":3,"note_evaluation_precedente":3,"niveau_hierarchique_poste":1,"satisfaction_employee_nature_travail":3,"satisfaction_employee_equipe":3,"satisfaction_employee_equilibre_pro_perso":3,"eval_number":"E_669","note_evaluation_actuelle":3,"heure_supplementaires":0,"augementation_salaire_precedente":"11 %","eval_number_int":669,"nombre_participation_pee":0,"nb_formations_suivies":2,"nombre_employee_sous_responsabilite":1,"code_sondage":669,"distance_domicile_travail":22,"niveau_education":1,"domaine_etude":"Entrepreunariat","frequence_deplacement":"Occasionnel","annees_depuis_la_derniere_promotion":1,"annes_sous_responsable_actuel":2,"employee_id_anon":"emp_c8b594649875c70a","changement_poste":1,"proba_chgt_experience_par_an":0.3333333333,"proba_chgt_experience_par_an_adulte":0.3333333333,"ratio_experience_vie_adulte":1.0,"evolution_note":0}}'
-```
-
-### Vérifier DB
 ```bash
 docker exec -it attrition_postgres psql -U attrition -d attrition_serving \
-  -c "SELECT id, created_at, proba_depart, prediction FROM predictions ORDER BY created_at DESC LIMIT 5;"
+  -c "SELECT created_at, proba_depart, prediction, threshold, model_version
+      FROM predictions ORDER BY created_at DESC LIMIT 5;"
 ```
 
----
+Predictions are logged on a best-effort basis: a database that is down does not stop the
+service from answering, by design. So an empty table with a healthy `/predict` means the
+log write is failing silently — check `DATABASE_URL` and the container.
 
-## D) Tests + couverture
 ```bash
-uv run pytest -q
-uv run pytest --cov=src --cov-report=term-missing --cov-report=html:reports/coverage_html
+docker compose ps
+uv run python scripts/db_smoke_test.py     # connectivity and row counts
+uv run python scripts/db_run_checks.py     # replays the inspection queries
 ```
 
----
+## 6. The logs
 
-## E) Déploiement HF (preuve)
-- Ouvrir : https://huggingface.co/spaces/<owner>/PrjPerso_hr-attrition-mlops
-- Faire un call `/predict` (avec API key)
-- Vérifier DB distante (Supabase) : `COUNT predictions` augmente
+```bash
+docker compose logs -f api        # containerised
+```
 
----
+Every request carries a request id, echoed in the `x-request-id` response header, so a
+caller's failed request can be found by that id rather than by timestamp.
 
-## F) CI/CD (preuve)
-- Le fichier workflow `.github/workflows/<...>.yml`
-- Run "green" dans GitHub Actions
+## 7. Starting from nothing
+
+```bash
+docker compose up -d                                # PostgreSQL
+uv run python scripts/db_apply_schema.py            # idempotent
+uv run python scripts/db_seed_employees.py          # the ten request fixtures
+uv run uvicorn attrition_serving.api.main:app --port 8000
+```
+
+## What is not monitored
+
+There is no drift detection and no alerting. This is an archived project: the runbook above
+is what a person does when they look, and nothing looks on its own. A service kept in
+production would need the predicted-probability distribution watched against the figure in
+step 3, which is the earliest signal available and arrives long before any label does.

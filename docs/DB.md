@@ -71,19 +71,19 @@ The decision log. Every call appends a row; nothing is updated in place.
 
 **Pourquoi `employee_id` nullable ?**
 - `/predict` takes a payload directly and has no employee to point at
-- `/predict_by_id` utilise l'ID
+- `/predict_by_id` takes the id and reads the features from `employees`
 
-**Pourquoi JSONB ?**
+**Why JSONB**
 - The feature set changes over a model's life. JSONB absorbs that without a migration:
   - the schema does not have to be rewritten when a column is added or dropped
-  - Robustesse pour les POC
+  - a source that adds a field does not break the write
   - and what is stored is what was actually sent, not a projection of it onto the
     columns that existed when the table was designed
 
-**Index / performance**
+**Indexes**
 The schema creates:
-- Index sur `predictions.created_at`
-- Index sur `predictions.employee_id`
+- one on `predictions.created_at`, for the history endpoint's ordering
+- one on `predictions.employee_id`, for the per-employee history
 - a GIN index on the JSONB if the payloads are ever queried by content; not needed at
   this volume
 
@@ -96,12 +96,17 @@ The schema creates:
 - `sql/serving/02_seed_checks.sql` — inspection queries, optional
 
 ### Scripts Python
-- `scripts/db_apply_schema.py` : applique `01_schema.sql`
-- `scripts/db_seed_employees.py` : seed minimal depuis `X_test_sample.json`
+- `scripts/db_apply_schema.py` — applies `01_schema.sql`; idempotent, so it is safe to rerun
+- `scripts/db_seed_employees.py` — seeds the ten request fixtures from `X_test_sample.json`
 - `scripts/db_smoke_test.py` — connectivity and row counts
+- `scripts/db_run_checks.py` — replays `sql/serving/02_seed_checks.sql` statement by
+  statement and prints what each returns; the fastest way to see whether a seed landed
+- `scripts/load_raw_to_postgres.py` — loads the three raw extracts into PostgreSQL so the
+  exploratory views in `sql/02` to `sql/05` have something to read. It belongs to the
+  analysis side, not to serving: the API never touches those tables
 
 ### Local, with Docker
-**Lancer PostgreSQL** :
+**Start PostgreSQL:**
 ```bash
 docker compose up -d
 ```
@@ -167,7 +172,7 @@ docker exec -it attrition_postgres psql -U attrition -d attrition_serving \
 
 ---
 
-## Supabase / DB distante (option)
+## Against a managed PostgreSQL
 A managed PostgreSQL usually requires `sslmode=require`:
 ```
 DATABASE_URL=postgresql+psycopg://postgres:<password>@db.<ref>.supabase.co:5432/postgres?sslmode=require
@@ -179,7 +184,8 @@ Then run the same scripts — `apply_schema`, `seed`, `smoke_test` — against t
 
 ## What the log guarantees
 - every prediction writes one row, and rows are never updated;
-- On garde le payload exact (`input_payload`) → audit complet
+- the exact payload is kept in `input_payload`, so a decision can be replayed against
+  the input that produced it rather than against a reconstruction of it;
 - `model_version` and `threshold` travel with the probability, so a decision taken six
   months ago can be explained without guessing which model made it. That is the whole
   point: a probability without the threshold that turned it into a decision is not a

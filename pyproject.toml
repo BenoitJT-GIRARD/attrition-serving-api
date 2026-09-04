@@ -90,3 +90,17 @@ markers = [
 # Warnings are errors. The suite had no filter at all, so nothing a dependency
 # deprecated would ever have failed a run.
 filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["src/attrition_serving"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
+
+# The CI calls `bandit -c pyproject.toml`, which without this section silently falls back to
+# defaults -- including flagging every `assert` in the test suite the day someone points it
+# at tests/.
+[tool.bandit]
+exclude_dirs = ["tests", "notebooks", ".venv"]
+skips = ["B101"]  # assert_used -- pytest convention
