@@ -1,16 +1,22 @@
 # Database (PostgreSQL) — Serving Schema & Operations
 
-## Objectif
-Cette base sert de **backend de serving** pour l'API de prédiction :
-- Stocker des **features employé** (source pour `/predict_by_id`)
-- Enregistrer **toutes les prédictions** (audit/traçabilité)
-- Permettre d'exposer un historique via `/history`
+## What this database is for
 
-> Règle projet : **toute interaction avec le modèle doit être loggée en DB**.
+Traceability. It is the reason this repository exists next to its twin, and it does three
+things:
+
+- hold employee features, so `/predict_by_id` can score someone already known;
+- record **every** prediction, with the probability, the threshold and the model version
+  that produced it;
+- expose that history through `/history`.
+
+> The rule the schema enforces: **no decision leaves the service without a row behind it.**
+> A model that scores without recording what it scored with cannot be audited after the
+> fact, and an HR decision is exactly the kind that gets questioned later.
 
 ---
 
-## Schéma (ERD)
+## Schema
 
 ```mermaid
 erDiagram
@@ -37,66 +43,70 @@ erDiagram
 ## Tables
 
 ### 1) employees
-Stocke un "profil" minimal d'employé sous forme JSONB.
 
-| Champ       | Type          | Rôle                          |
+A minimal employee profile, as JSONB.
+
+| Column      | Type          | Role                          |
 |-------------|---------------|-------------------------------|
-| `employee_id` | INTEGER (PK) | identifiant stable            |
-| `features`    | JSONB        | features d'entrée du modèle   |
-| `created_at`  | TIMESTAMPTZ  | timestamp insertion           |
+| `employee_id` | INTEGER (PK) | stable identifier             |
+| `features`    | JSONB        | the model's input features    |
+| `created_at`  | TIMESTAMPTZ  | insertion time                |
 
-**Utilisation** : `/predict_by_id/{employee_id}` récupère `features`.
+`/predict_by_id/{employee_id}` reads `features` from here.
 
 ### 2) predictions
-Journal des prédictions. Chaque appel crée une nouvelle ligne.
 
-| Champ          | Type              | Rôle                          |
+The decision log. Every call appends a row; nothing is updated in place.
+
+| Column         | Type              | Role                          |
 |---------------|-------------------|-------------------------------|
-| `id`           | BIGSERIAL (PK)    | id de prédiction              |
-| `created_at`   | TIMESTAMPTZ       | timestamp appel               |
-| `employee_id`  | INTEGER (FK nullable) | lien optionnel vers employees |
-| `input_payload`| JSONB             | payload exact envoyé au modèle|
-| `proba_depart` | DOUBLE            | probabilité prédite           |
-| `prediction`   | SMALLINT          | classe 0/1                    |
-| `threshold`    | DOUBLE            | seuil utilisé                 |
-| `model_version`| TEXT              | version modèle                |
+| `id`           | BIGSERIAL (PK)    | prediction id                 |
+| `created_at`   | TIMESTAMPTZ       | time of the call              |
+| `employee_id`  | INTEGER (FK, nullable) | set when scored by id    |
+| `input_payload`| JSONB             | the exact payload scored      |
+| `proba_depart` | DOUBLE            | predicted probability, calibrated |
+| `prediction`   | SMALLINT          | the decision, 0 or 1          |
+| `threshold`    | DOUBLE            | the threshold that decided it |
+| `model_version`| TEXT              | the model version that scored |
 
 **Pourquoi `employee_id` nullable ?**
-- `/predict` peut être fait sans ID (payload manuel)
+- `/predict` takes a payload directly and has no employee to point at
 - `/predict_by_id` utilise l'ID
 
 **Pourquoi JSONB ?**
-- Les features ML évoluent souvent (ajout/retrait). Stocker en JSONB permet :
-  - Schéma flexible
+- The feature set changes over a model's life. JSONB absorbs that without a migration:
+  - the schema does not have to be rewritten when a column is added or dropped
   - Robustesse pour les POC
-  - Audit complet des entrées réellement envoyées
+  - and what is stored is what was actually sent, not a projection of it onto the
+    columns that existed when the table was designed
 
 **Index / performance**
-Le schéma crée généralement :
+The schema creates:
 - Index sur `predictions.created_at`
 - Index sur `predictions.employee_id`
-- Éventuellement index GIN sur JSONB si besoin (non requis pour ce POC)
+- a GIN index on the JSONB if the payloads are ever queried by content; not needed at
+  this volume
 
 ---
 
 ## Scripts & SQL
 
 ### SQL
-- `sql/serving/01_schema.sql` : création tables + index (idempotent)
-- `sql/serving/02_seed_checks.sql` : requêtes d'inspection rapide (optionnel)
+- `sql/serving/01_schema.sql` — tables and indexes, idempotent
+- `sql/serving/02_seed_checks.sql` — inspection queries, optional
 
 ### Scripts Python
 - `scripts/db_apply_schema.py` : applique `01_schema.sql`
 - `scripts/db_seed_employees.py` : seed minimal depuis `X_test_sample.json`
-- `scripts/db_smoke_test.py` : connectivité + counts
+- `scripts/db_smoke_test.py` — connectivity and row counts
 
-### Démarrage local (Docker)
+### Local, with Docker
 **Lancer PostgreSQL** :
 ```bash
 docker compose up -d
 ```
 
-**Appliquer le schéma** :
+**Apply the schema:**
 ```bash
 uv run python scripts/db_apply_schema.py
 ```
@@ -113,31 +123,35 @@ uv run python scripts/db_smoke_test.py
 
 ---
 
-## Politique de seed (IMPORTANT — données RH)
-On ne seed jamais le dataset complet (sensibilité RH).
-On seed uniquement un sample safe et versionné :
+## Seeding policy — these are HR records
+
+The full dataset is never seeded. It describes real employees, and a database that is
+brought up by a `docker compose` in a public repository is not the place for it.
+
+What is seeded is a ten-row versioned sample, kept for one reason: to exercise the request
+path.
 - `data/processed/api_test/X_test_sample.json` (≤10 lignes)
 
-Ce sample sert à :
-- Tests d'intégration API↔DB
-- Démo `/predict_by_id`
+It is used for:
+- the API ↔ database integration tests;
+- a `/predict_by_id` demonstration.
 - Validation rapide en local/CI
 
 ---
 
-## Requêtes SQL utiles (preuves pour test)
+## Queries worth knowing
 
-### 1) Vérifier que le seed est présent
+### 1) Is the seed there
 ```sql
 SELECT COUNT(*) FROM employees;
 ```
 
-### 2) Vérifier qu'une prédiction est loggée
+### 2) Was a prediction logged
 ```sql
 SELECT COUNT(*) FROM predictions;
 ```
 
-### 3) Afficher les dernières prédictions
+### 3) The most recent decisions
 ```sql
 SELECT id, created_at, employee_id, proba_depart, prediction, threshold, model_version
 FROM predictions
@@ -154,16 +168,19 @@ docker exec -it attrition_postgres psql -U attrition -d attrition_serving \
 ---
 
 ## Supabase / DB distante (option)
-Pour Supabase, `sslmode=require` est souvent nécessaire :
+A managed PostgreSQL usually requires `sslmode=require`:
 ```
 DATABASE_URL=postgresql+psycopg://postgres:<password>@db.<ref>.supabase.co:5432/postgres?sslmode=require
 ```
 
-Ensuite exécuter les mêmes scripts (`apply_schema`, `seed`, `smoke_test`) en pointant vers `.env.supabase`.
+Then run the same scripts — `apply_schema`, `seed`, `smoke_test` — against that environment file.
 
 ---
 
-## Intégrité & traçabilité
-- Chaque prédiction → une ligne dans `predictions`
+## What the log guarantees
+- every prediction writes one row, and rows are never updated;
 - On garde le payload exact (`input_payload`) → audit complet
-- `model_version` + `threshold` sont loggés → reproductibilité et diagnostic
+- `model_version` and `threshold` travel with the probability, so a decision taken six
+  months ago can be explained without guessing which model made it. That is the whole
+  point: a probability without the threshold that turned it into a decision is not a
+  record of anything.

@@ -1,46 +1,54 @@
-# Deployment — Local / Docker / Hugging Face + CI/CD
+# Deployment — local, container, hosted, and the CI in between
 
-## Objectif
-Déployer une API FastAPI servant un modèle ML gelé, avec :
-- DB PostgreSQL en backend (traçabilité)
-- Secrets gérés proprement (pas dans Git)
-- CI/CD automatisé (tests + déploiement)
+## What this covers
 
----
-
-## Environnements supportés
-
-### Local (dev)
-- API sur `localhost:8000`
-- DB via Docker compose sur `localhost:5432`
-- Env : `.env.local`
-
-### CI (GitHub Actions)
-- DB = service postgres éphémère
-- Env injecté via variables CI (pas de dotenv)
-- Option `SKIP_DOTENV=1` pour éviter pollution
-
-### Prod (Hugging Face Space)
-- API servie via Docker, port `7860`
-- DB distante (ex: Supabase) ou autre instance Postgres
-- Secrets dans HF "Variables & secrets"
+Serving a frozen model behind FastAPI, with a PostgreSQL backend for the decision log,
+secrets that never enter git, and a pipeline that tests before it deploys.
 
 ---
 
-## Lancer en local (développement)
+## Three environments
 
-### 1) Installer deps
+### Local
+
+- API on `localhost:8000`
+- PostgreSQL through `docker compose`, on `localhost:5432`
+- Configuration in `.env.local`, which is not committed
+
+### CI
+
+- an ephemeral PostgreSQL service container
+- configuration injected as workflow variables, never from a file
+- `SKIP_DOTENV=1`, so a stray `.env` on a runner cannot change what the tests read
+
+### Hosted
+
+- the container, serving on port `7860`
+- a managed PostgreSQL
+- secrets held by the host, not by the image
+
+---
+
+## Locally
+
+### 1) Dependencies
+
 ```bash
 uv sync --group dev --group db --group serve
 ```
 
-### 2) Config env
+### 2) Configuration
+
 ```bash
 cp .env.example .env.local
-# éditer .env.local
 ```
 
-### 3) DB
+Set `API_KEY`. **Leave `MODEL_THRESHOLD` unset** unless you mean to override the operating
+point recorded in `models/model_card.json` — that variable used to be set to a value nothing
+justified, and the service decided at it.
+
+### 3) Database
+
 ```bash
 docker compose up -d
 uv run python scripts/db_apply_schema.py
@@ -48,30 +56,30 @@ uv run python scripts/db_seed_employees.py
 ```
 
 ### 4) API
+
 ```bash
 uv run uvicorn attrition_serving.api.main:app --reload --port 8000
 ```
 
 ### 5) Swagger
+
 - http://localhost:8000/docs
 
 ---
 
-## Exécution via Docker (simulation prod)
+## In a container
 
 ### Build
+
 ```bash
 docker build -t attrition-api .
 ```
 
-### Run (port 7860)
-Créer un fichier env pour docker (ex: `.env.docker`) contenant au minimum :
-- `API_KEY`
-- `DATABASE_URL`
-- `MODEL_THRESHOLD`
-- `MODEL_VERSION`
+### Run, on port 7860
 
-Puis :
+Create an env file — `.env.docker` — carrying at least `API_KEY`, `DATABASE_URL` and
+`MODEL_VERSION`:
+
 ```bash
 docker run -d --name attrition_api \
   --env-file .env.docker \
@@ -79,91 +87,86 @@ docker run -d --name attrition_api \
   attrition-api
 ```
 
-### Ouvrir
 - http://localhost:7860/docs
 
 ---
 
-## Déploiement Hugging Face Spaces (Docker)
+## On a Docker-based host
 
-### 1) Space Hugging Face
-- Créer un Space "Docker"
-- Connecter le repo (ou pousser depuis GitHub Action)
+### 1) The Space
 
-HF lit le `README.md` et son front-matter :
+Create a Docker Space and connect the repository, or push to it from a workflow. The host
+reads this repository's `README.md` front-matter:
+
 ```
 sdk: docker
 app_port: 7860
 ```
 
-### 2) Secrets HF (obligatoires)
-Dans Space → Settings → Variables & secrets :
-- `DATABASE_URL`
-- `API_KEY`
-- `MODEL_THRESHOLD`
-- `MODEL_VERSION`
+### 2) Secrets
 
-### 3) Vérifier
-- L'app doit démarrer sans erreurs
-- `/docs` doit être accessible
-- Un appel `/predict` doit fonctionner
-- Une ligne doit apparaître dans `predictions`
+In the Space settings: `DATABASE_URL`, `API_KEY`, `MODEL_VERSION`.
 
----
+### 3) Check it came up
 
-## CI/CD (GitHub Actions → Hugging Face)
+- the container starts without an error in its log;
+- `/docs` answers;
+- a `/predict` call returns 200 with a key and 401 without one;
+- a row appears in `predictions`.
 
-### Stratégie Git
-- `develop` : intégration continue
-- `main` : production (déployée)
-- Branches `feature/*`, `fix/*` : travail isolé
-- Release taggée : `vX.Y.Z`
-
-### Pipeline attendu
-**À chaque push/PR** :
-- Checkout
-- `uv sync`
-- Exécution `pytest`
-- (Optionnel) coverage
-
-**Sur push sur main** :
-- Déploiement vers HF (push vers le Space)
-
-### Secrets GitHub (exemple)
-Dans repo GitHub → Settings → Secrets and variables → Actions :
-- `HF_TOKEN`
-- `HF_SPACE` (ex: `user/space-name`)
-
-### DB en CI
-Les tests d'intégration nécessitent Postgres.
-En CI, un service Postgres est lancé et la variable `DATABASE_URL` pointe dessus.
+That last one is the check that matters. The first three can pass on a service whose
+database is unreachable, because the model loads and scores regardless — and a prediction
+that is not logged is, for this repository, a prediction that did not happen.
 
 ---
 
-## Versioning & traçabilité
-`MODEL_VERSION` est loggé dans `predictions`
+## CI/CD
 
-Pratique recommandée :
-- `MODEL_VERSION=v1.0.0` lors d'un tag
-- Ou `MODEL_VERSION=main-<sha>` en CI
+### Branches
+
+- `main` is what deploys;
+- `feature/*` and `fix/*` are where work happens;
+- releases are tagged `vX.Y.Z`.
+
+### On every push and pull request
+
+- checkout, `uv sync`
+- `ruff check` and `ruff format --check`
+- `bandit`
+- `pytest`, with a PostgreSQL service container so the integration tests actually run
+
+### On a push to `main`
+
+- deploy to the Space.
+
+### Secrets
+
+In the repository settings, under Actions: `HF_TOKEN` and `HF_SPACE`.
+
+### The database in CI
+
+The integration tests need PostgreSQL. CI starts a service container and points
+`DATABASE_URL` at it. Without one they skip in three seconds and say so, rather than hanging
+until a connection times out.
 
 ---
 
-## Smoke tests (check "ça marche")
+## Versioning
 
-### En local
-- `/health` OK
-- `/predict` OK (401 sans clé, 200 avec clé)
-- `SELECT COUNT(*) FROM predictions;` augmente après un call
+`MODEL_VERSION` is written into every row of `predictions`, so a decision can be traced to
+the model that made it.
 
-### En prod HF
-- `/docs` OK
-- Call `/predict` OK
-- DB distante reçoit les logs
+- `MODEL_VERSION=v1.0.0` on a tagged release
+- `MODEL_VERSION=main-<sha>` in CI
+
+Together with `threshold`, also logged per row, this is what makes a past decision
+explainable. A probability without the model version and the threshold that turned it into a
+decision records nothing usable.
 
 ---
 
-## Rollback (simple)
-Si un déploiement est cassé :
-- Re-déployer un tag précédent (ou re-push un commit stable sur `main`)
-- Garder `MODEL_VERSION` cohérent pour retracer les entrées en DB
+## Rollback
+
+Redeploy a previous tag, or push a known-good commit to `main`. Keep `MODEL_VERSION`
+consistent with what is deployed — a rollback that leaves the version string behind makes
+the log say the wrong thing about every row it writes afterwards.
