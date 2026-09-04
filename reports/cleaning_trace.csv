@@ -1,0 +1,6 @@
+stage,rows,columns,cells_missing,pct_missing,duplicated_rows
+raw: extrait_eval.csv,1470,10,0,0.0,0
+raw: extrait_sirh.csv,1470,12,0,0.0,0
+raw: extrait_sondage.csv,1470,12,0,0.0,0
+joined,1470,35,0,0.0,0
+engineered,1470,38,27,0.05,0

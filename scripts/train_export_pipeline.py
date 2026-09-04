@@ -73,7 +73,20 @@ def main() -> None:
     PATHS.reports.mkdir(parents=True, exist_ok=True)
     joblib.dump(pipeline, PATHS.models / "pipeline.joblib")
 
-    expected_features = list(X.columns)
+    # What the API requires is what the model consumes -- not every column that happened
+    # to be in the training frame. The previous list was `X.columns`, so a caller had to
+    # send the anonymised employee id and both join keys to get a prediction, and the
+    # pipeline dropped all three. Five required fields did nothing, one of them an
+    # identifier the service has no reason to ask for.
+    expected_features = [
+        *groups.num_cont,
+        *groups.num_log,
+        *groups.num_disc,
+        *groups.bin_cols,
+        *groups.cat_nom,
+        *groups.cat_ord,
+    ]
+    unused = sorted(set(X.columns) - set(expected_features))
     (PATHS.models / "expected_features.json").write_text(
         json.dumps(expected_features, indent=2), encoding="utf-8"
     )
@@ -99,6 +112,11 @@ def main() -> None:
         "n_fitted_on": len(y),
         "prevalence": float(y.mean()),
         "expected_n_features_raw": len(expected_features),
+        # Columns present in the training frame that the pipeline does not read. Recorded
+        # rather than left implicit: `augementation_salaire_precedente` is one of them, and
+        # a salary-increase variable being silently absent from an attrition model is worth
+        # a reader knowing.
+        "columns_not_consumed": unused,
         # Measured by cross-validation in scripts/run_evaluation.py, not here. The previous
         # card carried metrics from the same 90/10 split the model was fitted on.
         "evaluation": {
@@ -122,6 +140,10 @@ def main() -> None:
 
     print(f"Exported the '{arm}' model, fitted on {len(y):,} rows.")
     print(f"  threshold {threshold:.3f}, chosen at cost ratio {ratio}")
+    print(
+        f"  {len(expected_features)} features required by the API; {len(unused)} columns "
+        f"in the frame are not consumed: {', '.join(unused)}"
+    )
     print(
         f"  cross-validated AP {measured['average_precision_mean']:.3f} "
         f"+/- {measured['average_precision_sd']:.3f}, ECE {measured['calibration']['ece']:.4f}"

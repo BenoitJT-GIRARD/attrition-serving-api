@@ -1,0 +1,39 @@
+column,dtype,n_missing,pct_missing,n_unique,treatment
+a_quitte_l_entreprise,Int64,0,0.0,2,target
+age,int64,0,0.0,43,median impute + standardise
+annee_experience_totale,int64,0,0.0,40,median impute + log1p + standardise
+annees_dans_l_entreprise,int64,0,0.0,37,median impute + log1p + standardise
+annees_dans_le_poste_actuel,int64,0,0.0,19,median impute + log1p + standardise
+annees_depuis_la_derniere_promotion,int64,0,0.0,16,median impute + log1p + standardise
+annes_sous_responsable_actuel,int64,0,0.0,18,median impute + log1p + standardise
+augementation_salaire_precedente,object,0,0.0,15,not used by the model
+changement_poste,Int64,0,0.0,2,passthrough (already 0/1)
+code_sondage,int64,0,0.0,1470,not used by the model
+departement,object,0,0.0,3,most-frequent impute + one-hot
+distance_domicile_travail,int64,0,0.0,29,median impute + standardise
+domaine_etude,object,0,0.0,6,most-frequent impute + one-hot
+employee_id_anon,object,0,0.0,1470,not used by the model
+eval_number,object,0,0.0,1470,not used by the model
+eval_number_int,Int64,0,0.0,1470,not used by the model
+evolution_note,int64,0,0.0,5,"most-frequent impute + ordinal, order declared"
+frequence_deplacement,object,0,0.0,3,"most-frequent impute + ordinal, order declared"
+genre,Int64,0,0.0,2,passthrough (already 0/1)
+heure_supplementaires,Int64,0,0.0,2,passthrough (already 0/1)
+nb_formations_suivies,int64,0,0.0,7,median impute
+niveau_education,int64,0,0.0,5,"most-frequent impute + ordinal, order declared"
+niveau_hierarchique_poste,int64,0,0.0,5,"most-frequent impute + ordinal, order declared"
+nombre_employee_sous_responsabilite,int64,0,0.0,1,median impute
+nombre_experiences_precedentes,int64,0,0.0,10,median impute
+nombre_participation_pee,int64,0,0.0,4,median impute
+note_evaluation_actuelle,int64,0,0.0,2,"most-frequent impute + ordinal, order declared"
+note_evaluation_precedente,int64,0,0.0,4,"most-frequent impute + ordinal, order declared"
+poste,object,0,0.0,9,most-frequent impute + one-hot
+proba_chgt_experience_par_an,float64,11,0.75,167,median impute + standardise
+proba_chgt_experience_par_an_adulte,float64,8,0.54,192,median impute + standardise
+ratio_experience_vie_adulte,float64,8,0.54,306,median impute + standardise
+revenu_mensuel,int64,0,0.0,1349,median impute + log1p + standardise
+satisfaction_employee_environnement,int64,0,0.0,4,"most-frequent impute + ordinal, order declared"
+satisfaction_employee_equilibre_pro_perso,int64,0,0.0,4,"most-frequent impute + ordinal, order declared"
+satisfaction_employee_equipe,int64,0,0.0,4,"most-frequent impute + ordinal, order declared"
+satisfaction_employee_nature_travail,int64,0,0.0,4,"most-frequent impute + ordinal, order declared"
+statut_marital,object,0,0.0,3,most-frequent impute + one-hot

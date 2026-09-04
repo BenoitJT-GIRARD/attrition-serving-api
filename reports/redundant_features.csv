@@ -1,0 +1,8 @@
+feature_a,feature_b,abs_spearman,decision,why
+eval_number_int,code_sondage,1.0,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means
+revenu_mensuel,niveau_hierarchique_poste,0.92,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means
+note_evaluation_precedente,evolution_note,0.885,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means
+annees_dans_l_entreprise,annees_dans_le_poste_actuel,0.854,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means
+annees_dans_l_entreprise,annes_sous_responsable_actuel,0.843,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means
+proba_chgt_experience_par_an,proba_chgt_experience_par_an_adulte,0.832,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means
+nombre_experiences_precedentes,proba_chgt_experience_par_an_adulte,0.829,kept,L2-regularised logistic regression shares the coefficient between correlated features rather than becoming unstable; dropping one would change what the other's coefficient means

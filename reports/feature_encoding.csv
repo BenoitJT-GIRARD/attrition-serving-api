@@ -1,0 +1,15 @@
+column,kind,encoding,order
+statut_marital,nominal,"one-hot, unknown categories ignored",
+departement,nominal,"one-hot, unknown categories ignored",
+poste,nominal,"one-hot, unknown categories ignored",
+domaine_etude,nominal,"one-hot, unknown categories ignored",
+satisfaction_employee_environnement,ordinal,"ordinal, order declared",1 < 2 < 3 < 4
+satisfaction_employee_nature_travail,ordinal,"ordinal, order declared",1 < 2 < 3 < 4
+satisfaction_employee_equipe,ordinal,"ordinal, order declared",1 < 2 < 3 < 4
+satisfaction_employee_equilibre_pro_perso,ordinal,"ordinal, order declared",1 < 2 < 3 < 4
+note_evaluation_precedente,ordinal,"ordinal, order declared",1 < 2 < 3 < 4
+note_evaluation_actuelle,ordinal,"ordinal, order declared",3 < 4
+niveau_hierarchique_poste,ordinal,"ordinal, order declared",1 < 2 < 3 < 4 < 5
+niveau_education,ordinal,"ordinal, order declared",1 < 2 < 3 < 4 < 5
+frequence_deplacement,ordinal,"ordinal, order declared",Aucun < Frequent < Occasionnel
+evolution_note,ordinal,"ordinal, order declared",-1 < 0 < 1 < 2 < 3

@@ -59,22 +59,6 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(hs, bool):
             p["heure_supplementaires"] = int(hs)
 
-    # last pay rise: a string like "11 %" in the training data, so a number has to be
-    # formatted back into one -- the encoder learned the string, not the value.
-    # -> on accepte aussi 11 ou 0.11 et on convertit en "11 %"
-    if "augementation_salaire_precedente" in p:
-        a = p["augementation_salaire_precedente"]
-        if isinstance(a, (int, float)):
-            # si 0.11 -> 11%
-            val = a * 100 if 0 < a < 1 else a
-            p["augementation_salaire_precedente"] = f"{round(val)} %"
-        elif isinstance(a, str):
-            s = a.strip()
-            # normalise "11%" -> "11 %"
-            if s.endswith("%") and not s.endswith(" %"):
-                s = s[:-1].strip() + " %"
-            p["augementation_salaire_precedente"] = s
-
     return p
 
 

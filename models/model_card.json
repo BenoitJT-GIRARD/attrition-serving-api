@@ -11,7 +11,14 @@
   "threshold_rationale": "expected-cost optimum when one missed departure is worth 8 unnecessary retention conversations; see reports/cost_curve.csv for the other ratios",
   "n_fitted_on": 1470,
   "prevalence": 0.16122448979591836,
-  "expected_n_features_raw": 37,
+  "expected_n_features_raw": 32,
+  "columns_not_consumed": [
+    "augementation_salaire_precedente",
+    "code_sondage",
+    "employee_id_anon",
+    "eval_number",
+    "eval_number_int"
+  ],
   "evaluation": {
     "protocol": "5x5 repeated stratified cross-validation",
     "average_precision": 0.5687,
