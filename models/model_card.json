@@ -1,15 +1,25 @@
 {
   "target": "a_quitte_l_entreprise",
   "model_type": "logistic_regression",
+  "calibration": "crossfit",
   "final_params": {
     "model__C": 0.1,
     "model__l1_ratio": 0.0
   },
-  "default_threshold": 0.32,
-  "n_train": 1323,
-  "n_test": 147,
-  "train_ap": 0.6819411506881606,
-  "test_ap": 0.5460021752541807,
+  "default_threshold": 0.1105,
+  "threshold_cost_ratio": 8,
+  "threshold_rationale": "expected-cost optimum when one missed departure is worth 8 unnecessary retention conversations; see reports/cost_curve.csv for the other ratios",
+  "n_fitted_on": 1470,
+  "prevalence": 0.16122448979591836,
   "expected_n_features_raw": 37,
+  "evaluation": {
+    "protocol": "5x5 repeated stratified cross-validation",
+    "average_precision": 0.5687,
+    "average_precision_sd": 0.0583,
+    "roc_auc": 0.8196,
+    "roc_auc_sd": 0.0284,
+    "ece": 0.0147,
+    "brier": 0.0965
+  },
   "sklearn_version": "1.8.0"
 }
