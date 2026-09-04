@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from attrition_serving.config import FINAL_MODEL_PARAMS, PATHS, SETTINGS
-from attrition_serving.modeling import make_logreg
+from attrition_serving.modeling import make_dummy, make_logreg, make_random_forest
 from attrition_serving.preprocessing import make_feature_groups
 from attrition_serving.protocol import (
     ProtocolConfig,
@@ -60,6 +60,16 @@ SHIPPED_ARM = "crossfit"
 #: behind the threshold it ships.
 COST_RATIOS = (1, 2, 3, 5, 8, 13, 20, 30)
 SHIPPED_RATIO = 8
+
+#: The three model families the notebook compares. Measured under the same protocol as
+#: everything else, because the notebook stated their scores in prose -- 0.84 accuracy for
+#: the dummy, 66% recall for the logistic regression, 0.106 for the forest -- from a single
+#: split, and nothing in the repository produced them.
+BASELINES = {
+    "dummy": make_dummy,
+    "logreg": make_logreg,
+    "random_forest": make_random_forest,
+}
 
 #: The attributes a retention alert must be shown not to concentrate on.
 SUBGROUP_COLUMNS = ("genre", "statut_marital", "departement")
@@ -138,6 +148,18 @@ def main() -> None:
 
     # The cost curve is read on the scale that will be served: a threshold taken from one
     # probability scale does not transfer to another.
+    # The three model families, same folds, no calibration and no tuning: this is the
+    # comparison the notebook asserted in prose.
+    baseline_rows = []
+    for name, factory in BASELINES.items():
+        params = FINAL_MODEL_PARAMS if name == "logreg" else None
+        folds, _oof = evaluate_cv(
+            X, y, lambda f=factory: f(groups), params=params, config=ProtocolConfig()
+        )
+        baseline_rows.append({"model": name, **summarise(folds)})
+    baselines = pd.DataFrame(baseline_rows)
+    baselines.to_csv(PATHS.reports / "baselines.csv", index=False)
+
     curve = cost_curve(out_of_fold[SHIPPED_ARM], ratios=COST_RATIOS)
     curve.to_csv(PATHS.reports / "cost_curve.csv", index=False)
 
@@ -177,6 +199,13 @@ def main() -> None:
         f"the published 90/10 split gave AP {baseline['average_precision']:.3f} — "
         f"above {summary['single_split_ap_percentile']:.0%} of the folds"
     )
+    print(f"\n{'model':>14} {'AP':>16} {'ROC AUC':>16} {'recall':>8}")
+    for row in baselines.itertuples():
+        print(
+            f"{row.model:>14} {row.average_precision_mean:>8.3f} "
+            f"+/-{row.average_precision_sd:<5.3f} {row.roc_auc_mean:>8.3f} "
+            f"+/-{row.roc_auc_sd:<5.3f} {row.recall_mean:>8.3f}"
+        )
     print(
         f"\nshipping the '{SHIPPED_ARM}' arm at cost ratio {SHIPPED_RATIO}: "
         f"threshold {shipped_threshold:.3f}, "
@@ -186,6 +215,7 @@ def main() -> None:
     for path in (
         "evaluation_cv.csv",
         "evaluation_summary.json",
+        "baselines.csv",
         "cost_curve.csv",
         "calibration.csv",
         "subgroups.csv",
