@@ -177,7 +177,7 @@ def evaluate_cv(
             {
                 "repeat": repeat,
                 "fold": fold,
-                "n_test": int(len(test_idx)),
+                "n_test": len(test_idx),
                 "n_positive": int(y_test.sum()),
                 "average_precision": float(average_precision_score(y_test, p_test)),
                 "roc_auc": float(roc_auc_score(y_test, p_test)),
@@ -203,7 +203,7 @@ def evaluate_cv(
 def summarise(per_fold: pd.DataFrame) -> dict[str, float | int]:
     """Mean and spread across folds, for every quantity the repository publishes."""
     summary: dict[str, float | int] = {
-        "n_folds": int(len(per_fold)),
+        "n_folds": len(per_fold),
         "n_rows_scored": int(per_fold["n_test"].sum()),
         "n_positive_scored": int(per_fold["n_positive"].sum()),
     }
@@ -335,7 +335,7 @@ def subgroup_rates(
                 {
                     "attribute": column,
                     "group": str(value),
-                    "n": int(len(block)),
+                    "n": len(block),
                     "n_positive": positives,
                     # The base rate has to sit next to the alert rate, or the two get
                     # confused. A group that leaves twice as often *should* be alerted on

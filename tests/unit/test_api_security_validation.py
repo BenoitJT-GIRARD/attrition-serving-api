@@ -3,7 +3,7 @@ import importlib
 import pytest
 from fastapi.testclient import TestClient
 
-import attrition_serving.api.settings as settings
+from attrition_serving.api import settings
 
 
 @pytest.fixture()
@@ -24,7 +24,7 @@ def client(monkeypatch):
     settings.reset_config_cache()
 
     # 4) Recharger l'app après env + reset cache
-    import attrition_serving.api.main as main
+    from attrition_serving.api import main
 
     importlib.reload(main)
 

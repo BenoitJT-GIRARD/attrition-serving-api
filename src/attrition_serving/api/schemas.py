@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -13,11 +13,11 @@ class PredictRequest(BaseModel):
     - features = dict[str, primitive]
     """
 
-    features: Dict[str, Primitive] = Field(..., description="Features brutes (avant encodage).")
+    features: dict[str, Primitive] = Field(..., description="Features brutes (avant encodage).")
 
     @field_validator("features")
     @classmethod
-    def validate_primitives(cls, v: Dict[str, Any]) -> Dict[str, Primitive]:
+    def validate_primitives(cls, v: dict[str, Any]) -> dict[str, Primitive]:
         for k, val in v.items():
             if not isinstance(val, (int, float, str, bool)) and val is not None:
                 raise ValueError(f"Valeur non supportée pour {k}: {type(val)}")
@@ -30,15 +30,15 @@ class PredictResponse(BaseModel):
     threshold: float
     model_version: str
     stored: bool
-    db_id: Optional[int] = None
+    db_id: int | None = None
 
 
 class HistoryItem(BaseModel):
     id: int
     created_at: str
-    employee_id: Optional[int]
+    employee_id: int | None
     proba_depart: float
     prediction: int
     threshold: float
     model_version: str
-    input_payload: Dict[str, Any]
+    input_payload: dict[str, Any]

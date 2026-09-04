@@ -15,10 +15,11 @@ def main():
     with engine.connect() as conn:
         for stmt in [s.strip() for s in sql.split(";") if s.strip()]:
             res = conn.execute(text(stmt))
-            try:
-                rows = res.fetchall()
-                print(rows[:5])
-            except Exception:
+            # A DDL or DML statement has no result set to fetch; that is the only
+            # reason this can raise here, and catching everything hid it.
+            if res.returns_rows:
+                print(res.fetchall()[:5])
+            else:
                 print("(no rows)")
 
     print("✅ Checks executed")

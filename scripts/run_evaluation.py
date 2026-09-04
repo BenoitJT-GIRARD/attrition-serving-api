@@ -34,10 +34,10 @@ from sklearn.model_selection import train_test_split
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from attrition_serving.config import FINAL_MODEL_PARAMS, PATHS, SETTINGS  # noqa: E402
-from attrition_serving.modeling import make_logreg  # noqa: E402
-from attrition_serving.preprocessing import make_feature_groups  # noqa: E402
-from attrition_serving.protocol import (  # noqa: E402
+from attrition_serving.config import FINAL_MODEL_PARAMS, PATHS, SETTINGS
+from attrition_serving.modeling import make_logreg
+from attrition_serving.preprocessing import make_feature_groups
+from attrition_serving.protocol import (
     ProtocolConfig,
     cost_curve,
     evaluate_cv,
@@ -75,7 +75,7 @@ def _single_split_baseline(X: pd.DataFrame, y: pd.Series, frame: pd.DataFrame) -
     model.fit(X_train, y_train)
     p = model.predict_proba(X_test)[:, 1]
     return {
-        "n_test": int(len(y_test)),
+        "n_test": len(y_test),
         "n_positive": int(y_test.sum()),
         "average_precision": float(average_precision_score(y_test, p)),
         "roc_auc": float(roc_auc_score(y_test, p)),
@@ -111,7 +111,7 @@ def main() -> None:
         "n_repeats": config.n_repeats,
         "seed": config.seed,
         "target_recall": config.target_recall,
-        "n_rows": int(len(y)),
+        "n_rows": len(y),
         "prevalence": float(y.mean()),
         "shipped_arm": SHIPPED_ARM,
         "shipped_cost_ratio": SHIPPED_RATIO,

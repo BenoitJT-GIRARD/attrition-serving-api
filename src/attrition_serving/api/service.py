@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import joblib
 import pandas as pd
@@ -27,7 +27,7 @@ def load_pipeline():
     return joblib.load(cfg.pipeline_path)
 
 
-def normalize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Normalise quelques champs sensibles pour éviter les erreurs de dtype.
     Objectif: accepter des entrées humaines (M/F, Oui/Non) tout en nourrissant
@@ -66,7 +66,7 @@ def normalize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(a, (int, float)):
             # si 0.11 -> 11%
             val = a * 100 if 0 < a < 1 else a
-            p["augementation_salaire_precedente"] = f"{int(round(val))} %"
+            p["augementation_salaire_precedente"] = f"{round(val)} %"
         elif isinstance(a, str):
             s = a.strip()
             # normalise "11%" -> "11 %"
@@ -77,7 +77,7 @@ def normalize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     return p
 
 
-def check_payload(payload: Dict[str, Any]) -> Tuple[list[str], list[str]]:
+def check_payload(payload: dict[str, Any]) -> tuple[list[str], list[str]]:
     """
     Vérifie que:
     - toutes les features attendues sont présentes
@@ -89,13 +89,13 @@ def check_payload(payload: Dict[str, Any]) -> Tuple[list[str], list[str]]:
     return missing, nulls
 
 
-def align_features(payload: Dict[str, Any]) -> pd.DataFrame:
+def align_features(payload: dict[str, Any]) -> pd.DataFrame:
     expected = get_expected_features()
     aligned = {f: payload.get(f, None) for f in expected}
     return pd.DataFrame([aligned], columns=expected)
 
 
-def predict_proba(payload: Dict[str, Any]) -> float:
+def predict_proba(payload: dict[str, Any]) -> float:
     pipe = load_pipeline()
     X = align_features(payload)
     proba = float(pipe.predict_proba(X)[:, 1][0])

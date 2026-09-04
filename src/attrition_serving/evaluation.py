@@ -37,7 +37,7 @@ def evaluate_classifier(model, X_train, y_train, X_test, y_test, threshold: floa
 
 
 def plot_precision_recall(y_true, p_hat):
-    precision, recall, thr = precision_recall_curve(y_true, p_hat)
+    precision, recall, _thresholds = precision_recall_curve(y_true, p_hat)
     ap = average_precision_score(y_true, p_hat)
 
     plt.figure()
@@ -50,7 +50,7 @@ def plot_precision_recall(y_true, p_hat):
 
 
 def find_threshold_for_recall(y_true, p_hat, target_recall: float = 0.80) -> float:
-    precision, recall, thr = precision_recall_curve(y_true, p_hat)
+    _precision, recall, thr = precision_recall_curve(y_true, p_hat)
     # thr a une longueur (n-1), recall/precision longueur n
     # on cherche le premier seuil qui atteint recall >= target
     idx = np.where(recall[:-1] >= target_recall)[0]

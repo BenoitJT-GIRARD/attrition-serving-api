@@ -96,7 +96,7 @@ def main() -> None:
             f"expected-cost optimum when one missed departure is worth {ratio} unnecessary "
             "retention conversations; see reports/cost_curve.csv for the other ratios"
         ),
-        "n_fitted_on": int(len(y)),
+        "n_fitted_on": len(y),
         "prevalence": float(y.mean()),
         "expected_n_features_raw": len(expected_features),
         # Measured by cross-validation in scripts/run_evaluation.py, not here. The previous
