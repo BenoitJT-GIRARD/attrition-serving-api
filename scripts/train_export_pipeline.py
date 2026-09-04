@@ -37,7 +37,7 @@ from attrition_serving.config import (
     FINAL_MODEL_PARAMS,
     PATHS,
 )
-from attrition_serving.modeling import make_logreg
+from attrition_serving.modeling.models import make_logreg
 from attrition_serving.preprocessing import make_feature_groups
 
 TARGET = "a_quitte_l_entreprise"

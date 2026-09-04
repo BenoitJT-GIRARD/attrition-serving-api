@@ -1,3 +1,16 @@
+"""Single-split metrics, kept for the notebooks.
+
+The published figures do not come through here -- `protocol.py` does that, over repeated
+stratified folds, and it is the one to read. What remains is what a notebook needs to look
+at one fit: a metric dictionary, a precision-recall curve, and the threshold that reaches a
+target recall.
+
+`find_threshold_for_recall` is the function that, called on a test set, produced a recall
+of 0.80 that was the definition of the threshold rather than a property of the model. It is
+correct in itself; the protocol calls it inside each fold, on a split the scoring fold
+never sees.
+"""
+
 from __future__ import annotations
 
 import matplotlib.pyplot as plt

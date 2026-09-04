@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from attrition_serving.config import PATHS
-from attrition_serving.db import get_engine
+from attrition_serving.db.engine import get_engine
 
 
 def sanitize_column(name: str) -> str:

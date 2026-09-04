@@ -35,9 +35,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from attrition_serving.config import FINAL_MODEL_PARAMS, PATHS, SETTINGS
-from attrition_serving.modeling import make_dummy, make_logreg, make_random_forest
-from attrition_serving.preprocessing import make_feature_groups
-from attrition_serving.protocol import (
+from attrition_serving.modeling.models import make_dummy, make_logreg, make_random_forest
+from attrition_serving.modeling.protocol import (
     ProtocolConfig,
     cost_curve,
     evaluate_cv,
@@ -45,6 +44,7 @@ from attrition_serving.protocol import (
     subgroup_rates,
     summarise,
 )
+from attrition_serving.preprocessing import make_feature_groups
 
 TARGET = "a_quitte_l_entreprise"
 

@@ -1,3 +1,10 @@
+"""Turning what the extracts actually contain into what a model can read.
+
+Yes/no columns arrive in half a dozen spellings, percentages arrive as `"11 %"` strings, and
+a division by zero has to produce a missing value rather than an infinity. Each conversion
+is one function so that the cleaning trace can name which one touched a column.
+"""
+
 from __future__ import annotations
 
 import numpy as np

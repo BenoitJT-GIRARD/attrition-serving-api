@@ -1,3 +1,10 @@
+"""The plots and tables the exploration notebook draws.
+
+Nothing here is imported by the serving path or by the evaluation protocol. It exists so
+that the notebook contains a call rather than forty lines of matplotlib, and so that the
+same distribution is drawn the same way every time it is drawn.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Iterable

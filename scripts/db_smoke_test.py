@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import text
 
-from attrition_serving.db import get_engine
+from attrition_serving.db.engine import get_engine
 from attrition_serving.env import load_env
 
 

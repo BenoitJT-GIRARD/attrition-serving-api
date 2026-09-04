@@ -16,7 +16,7 @@ import sqlalchemy
 from fastapi.testclient import TestClient
 
 from attrition_serving.api.settings import reset_config_cache
-from attrition_serving.serving_db_ops import apply_schema, truncate_predictions
+from attrition_serving.db.serving_ops import apply_schema, truncate_predictions
 
 #: The local docker-compose database. Override with DATABASE_URL to point elsewhere.
 DEFAULT_URL = "postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving"

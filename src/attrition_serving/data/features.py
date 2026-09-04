@@ -1,9 +1,17 @@
+"""The derived columns, and the incoherences that survive the derivation.
+
+`add_engineered_features` builds the ratios the model uses -- experience per year of adult
+life, the change in evaluation, the promotion gap. `compute_incoherence_metrics` counts the
+rows those ratios come out impossible on, which is a data-quality figure rather than a
+feature: it belongs in the report, not in the frame.
+"""
+
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from attrition_serving.cleaning import (
+from attrition_serving.data.cleaning import (
     drop_constant_columns,
     percent_to_ratio,
     safe_divide,

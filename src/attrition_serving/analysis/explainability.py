@@ -1,3 +1,10 @@
+"""What the fitted model is looking at: permutation importance and SHAP.
+
+Two paths, because a linear model and a tree model do not explain the same way, and one
+shared helper for the feature names -- a plot that labels its rows `Feature 12` explains
+nothing, and the transformed column names are the only place the real ones survive.
+"""
+
 from __future__ import annotations
 
 import numpy as np

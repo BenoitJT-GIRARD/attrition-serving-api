@@ -1,3 +1,10 @@
+"""Grid search, and a readable table of what it tried.
+
+`summarize_grid_search` exists because the interesting output of a search is not its best
+estimator but the spread across the grid: a winner that beats its neighbours by less than
+the fold-to-fold noise has not won anything.
+"""
+
 from __future__ import annotations
 
 import pandas as pd

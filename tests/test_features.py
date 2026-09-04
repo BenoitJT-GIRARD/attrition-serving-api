@@ -1,6 +1,6 @@
 import pandas as pd
 
-from attrition_serving.features import add_engineered_features
+from attrition_serving.data.features import add_engineered_features
 
 
 def test_add_engineered_features_basic():

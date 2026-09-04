@@ -1,3 +1,10 @@
+"""The three estimators the protocol scores, each wrapped with its preprocessor.
+
+A dummy for the floor, a logistic regression for the shipped model, a random forest for the
+comparison. Each is a `Pipeline`, so cross-validation fits the preprocessing inside the
+fold rather than over the whole frame.
+"""
+
 from __future__ import annotations
 
 from sklearn.dummy import DummyClassifier

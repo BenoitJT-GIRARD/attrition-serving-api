@@ -1,3 +1,9 @@
+"""Loading the environment file, once, from the repository root.
+
+Separate from `config` so that a test can import the settings without a dotenv appearing
+underneath it: `SKIP_DOTENV=1` is what the API tests set.
+"""
+
 from __future__ import annotations
 
 import os

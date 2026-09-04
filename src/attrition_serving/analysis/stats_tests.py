@@ -1,3 +1,13 @@
+"""Comparing leavers against stayers, one variable at a time.
+
+The test is chosen from the data rather than assumed: normality decides between the
+parametric and the rank-based comparison, and the choice is reported alongside the p-value
+so a reader can see which was run.
+
+These are screening comparisons over thirty-odd variables. No correction is applied here,
+and the results are read as directions worth looking at rather than as findings.
+"""
+
 from __future__ import annotations
 
 import numpy as np

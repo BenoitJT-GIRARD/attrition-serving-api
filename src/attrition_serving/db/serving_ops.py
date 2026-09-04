@@ -1,3 +1,10 @@
+"""What the serving side does to the decision log: schema, truncation, counts, history.
+
+The table names a caller may reach are a closed set (`AllowedTable`) rather than a string
+interpolated into SQL. There is no user input on this path today; the type is what keeps it
+that way.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

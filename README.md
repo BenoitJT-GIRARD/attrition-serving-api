@@ -244,8 +244,14 @@ Every route except `/health` requires an `X-API-Key` header.
 ├── sql/                           # exploratory views, and the serving schema
 ├── src/attrition_serving/
 │   ├── api/                       # routes, settings, dependencies
-│   ├── protocol.py                # the evaluation protocol; nothing publishes around it
-│   └── ...                        # cleaning, features, modelling, database
+│   ├── data/                      # reading, anonymising, cleaning, deriving
+│   ├── analysis/                  # exploration, univariate tests, SHAP
+│   ├── modeling/
+│   │   ├── protocol.py            #   the evaluation protocol; nothing publishes around it
+│   │   └── ...                    #   estimators, tuning, single-split metrics
+│   ├── db/                        # engine, and the decision log's operations
+│   ├── preprocessing.py           # the fitted transformers — the artefact names this path
+│   └── config.py, env.py
 └── tests/                         # unit and integration; the integration ones skip in 3s
 ```
 

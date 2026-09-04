@@ -1,3 +1,10 @@
+"""Reading the three extracts, anonymising the identifier, and joining them.
+
+The employee identifier is hashed with HMAC-SHA256 rather than a plain digest: the space of
+employee numbers is small enough to enumerate, so an unkeyed hash is reversible by trying
+every number. The key comes from the environment and is not in the repository.
+"""
+
 from __future__ import annotations
 
 import hashlib

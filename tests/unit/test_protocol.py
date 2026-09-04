@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from attrition_serving.protocol import (
+from attrition_serving.modeling.protocol import (
     ProtocolConfig,
     cost_curve,
     evaluate_cv,

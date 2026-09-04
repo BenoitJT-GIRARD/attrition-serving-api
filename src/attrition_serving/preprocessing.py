@@ -1,3 +1,16 @@
+"""The transformers the fitted pipeline is made of.
+
+**This module's import path is part of the shipped artefact.** A scikit-learn pickle stores
+the qualified name of every transformer it holds, and `models/pipeline.joblib` names
+`attrition_serving.preprocessing`. Moving or renaming this file makes the shipped model
+unloadable -- which has happened once already, and which no test caught until one was
+written to open the file.
+
+`make_feature_groups` decides what each column is; `build_preprocessor` turns that into a
+`ColumnTransformer`. The imputation and scaling are steps of the pipeline rather than a
+pass over the frame beforehand, so nothing about a validation fold reaches the transformer.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

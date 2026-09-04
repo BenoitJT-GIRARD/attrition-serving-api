@@ -1,3 +1,10 @@
+"""The database URL and the SQLAlchemy engine, built once.
+
+`pool_pre_ping` is on because a managed PostgreSQL closes idle connections without telling
+anyone, and a pooled connection that died between two requests fails on the next query
+rather than on the checkout.
+"""
+
 from __future__ import annotations
 
 import os

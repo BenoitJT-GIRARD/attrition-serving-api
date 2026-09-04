@@ -1,6 +1,6 @@
 import pandas as pd
 
-from attrition_serving.data_io import anonymize_employee_id, parse_eval_number
+from attrition_serving.data.io import anonymize_employee_id, parse_eval_number
 
 
 def test_parse_eval_number():
