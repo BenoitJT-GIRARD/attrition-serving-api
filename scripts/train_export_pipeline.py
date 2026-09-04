@@ -2,6 +2,7 @@ import json
 
 import joblib
 import pandas as pd
+import sklearn
 from sklearn.model_selection import train_test_split
 
 from attrition_serving.config import (
@@ -88,6 +89,10 @@ def main():
         "train_ap": res["train_ap"],
         "test_ap": res["test_ap"],
         "expected_n_features_raw": len(expected_features),
+        # A scikit-learn pickle is only readable by a compatible scikit-learn, and it names
+        # the module that defined its transformers. Versioning the artefact without
+        # versioning what reads it is versioning a file, not a model.
+        "sklearn_version": sklearn.__version__,
     }
     (PATHS.models / "model_card.json").write_text(
         json.dumps(model_card, indent=2),

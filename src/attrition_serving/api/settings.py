@@ -48,11 +48,31 @@ def get_config() -> AppConfig:
     api_key = os.getenv("API_KEY", "")
     database_url = os.getenv("DATABASE_URL", "")
 
-    # seuil: env > model_card > 0.5
-    threshold = os.getenv("MODEL_THRESHOLD")
-    if threshold is None or threshold == "":
-        threshold = model_card.get("threshold_default", 0.5)
-    threshold = float(threshold)
+    # The threshold comes from the artefact. MODEL_THRESHOLD is an operator override, not
+    # the source of the default.
+    #
+    # This block used to read `model_card["threshold_default"]` while the export script
+    # writes `default_threshold`. The lookup missed every time and fell back to 0.5, so the
+    # service decided at 0.5 while every published figure said 0.32 -- recall 0.625 served
+    # against 0.833 documented. A missing threshold is now an error rather than a silent
+    # default: serving an undocumented operating point is worse than refusing to start.
+    override = os.getenv("MODEL_THRESHOLD")
+    if override:
+        threshold = float(override)
+    elif model_card:
+        if "default_threshold" not in model_card:
+            raise RuntimeError(
+                f"{model_card_path} has no 'default_threshold'. Re-export the model with "
+                "scripts/train_export_pipeline.py, or set MODEL_THRESHOLD explicitly."
+            )
+        threshold = float(model_card["default_threshold"])
+    else:
+        raise RuntimeError(
+            f"No model card at {model_card_path} and no MODEL_THRESHOLD set: there is no "
+            "threshold to serve."
+        )
+    if not 0.0 < threshold < 1.0:
+        raise ValueError(f"threshold must be in (0, 1), got {threshold}")
 
     # version: env > model_card > "dev"
     model_version = os.getenv("MODEL_VERSION") or model_card.get("model_version", "dev")

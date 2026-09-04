@@ -5,9 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-ROOT = (
-    Path(__file__).resolve().parents[2]
-)  # repo root (src/attrition_serving/env.py -> parents[2])
+ROOT = Path(__file__).resolve().parents[2]  # repo root (src/attrition_serving/env.py -> parents[2])
 
 
 def load_env(default_env_file: str = ".env.local") -> None:
