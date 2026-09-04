@@ -39,3 +39,5 @@ artifacts/
 .coverage
 htmlcov/
 reports/coverage_html/
+# Written by the coverage step into a directory whose other files are published artefacts.
+reports/coverage.xml
