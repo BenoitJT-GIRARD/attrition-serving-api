@@ -1,3 +1,9 @@
+"""A missing key is 401, and a malformed payload is 422 naming what it is missing.
+
+The second matters as much as the first: a caller assembling thirty-two features learns
+every missing field at once, not one per round trip.
+"""
+
 import importlib
 
 import pytest

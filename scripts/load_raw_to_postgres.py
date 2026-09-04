@@ -1,3 +1,9 @@
+"""Load the three raw extracts into PostgreSQL, for the exploratory SQL views.
+
+This belongs to the analysis side, not to serving: the API never reads these tables. It
+needs the extracts, which are not in the repository.
+"""
+
 from __future__ import annotations
 
 import re

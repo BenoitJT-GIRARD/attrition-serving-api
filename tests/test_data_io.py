@@ -1,3 +1,9 @@
+"""Reading and anonymising: the evaluation number parses, and the same id hashes the same.
+
+Stability is the point of the second one. An identifier that hashes differently between two
+runs makes the decision log unjoinable to itself.
+"""
+
 import pandas as pd
 
 from attrition_serving.data.io import anonymize_employee_id, parse_eval_number

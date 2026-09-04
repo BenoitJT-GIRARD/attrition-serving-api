@@ -1,3 +1,5 @@
+"""The derived columns come out of the arithmetic they claim, on a frame small enough to check by hand."""
+
 import pandas as pd
 
 from attrition_serving.data.features import add_engineered_features

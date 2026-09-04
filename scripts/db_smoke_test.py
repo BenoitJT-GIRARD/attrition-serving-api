@@ -1,3 +1,5 @@
+"""Connect, count, and say so. The first thing to run when the service cannot write."""
+
 from __future__ import annotations
 
 from sqlalchemy import text

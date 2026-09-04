@@ -1,3 +1,9 @@
+"""The frame handed to the pipeline carries the expected columns, in the expected order.
+
+A pipeline fed the right columns in the wrong order does not raise. It predicts something
+else.
+"""
+
 import json
 from pathlib import Path
 

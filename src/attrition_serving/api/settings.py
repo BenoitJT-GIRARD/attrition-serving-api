@@ -1,3 +1,12 @@
+"""What the service is configured with, resolved once and cached.
+
+The threshold is the part worth reading. It comes from the model card unless
+`MODEL_THRESHOLD` overrides it, and **a card without a threshold is an error rather than a
+default**: this service once looked up a key the export does not write, fell back to 0.5,
+and served an operating point nothing documented while every published figure said
+otherwise. Refusing to start is the cheaper failure.
+"""
+
 from __future__ import annotations
 
 import json

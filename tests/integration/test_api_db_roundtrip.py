@@ -1,3 +1,10 @@
+"""A prediction is written, and the history returns it with its threshold and model version.
+
+Needs PostgreSQL. Without it these skip in three seconds, naming the command that would
+make them run -- they used to take four and a half minutes to report the same thing,
+because nothing set a connect timeout.
+"""
+
 import json
 from pathlib import Path
 

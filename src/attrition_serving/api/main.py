@@ -1,3 +1,9 @@
+"""The application object, its lifespan, and the one route that needs no key.
+
+The engine is disposed on shutdown rather than left to the garbage collector: a pool that
+outlives the process holds connections a managed PostgreSQL counts against a quota.
+"""
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

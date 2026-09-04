@@ -1,3 +1,10 @@
+"""The request and response shapes, which are also the generated OpenAPI documentation.
+
+`PredictResponse` returns the threshold beside the probability. That is not decoration: a
+probability without the threshold that turned it into a decision is not a record of
+anything, and the same pair is what goes into the decision log.
+"""
+
 from __future__ import annotations
 
 from typing import Any

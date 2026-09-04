@@ -1,3 +1,18 @@
+"""Between the payload and the model: normalise, check, align, score, decide.
+
+`check_payload` names every missing field at once rather than one per round trip, because a
+caller assembling thirty-two features should not need thirty-two requests to learn what is
+missing.
+
+`align_features` reads `models/expected_features.json` and hands the pipeline the columns
+it was fitted on, in that order. The contract used to demand five fields the model never
+consumed -- two join keys, the anonymised id, and the previous pay rise -- and the service
+carefully normalised one of them on the way in. A pipeline fed columns in another order
+does not complain; it predicts something else.
+
+`decide` is one line, and it is the line the whole service exists to run.
+"""
+
 from __future__ import annotations
 
 import json

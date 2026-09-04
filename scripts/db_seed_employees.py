@@ -1,3 +1,9 @@
+"""Load the ten committed request fixtures into `employees`, so `/predict_by_id` has rows.
+
+Ten, and not the full extract: the HR records describe real employees and are not in this
+repository.
+"""
+
 from __future__ import annotations
 
 import json

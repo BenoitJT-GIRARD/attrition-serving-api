@@ -1,3 +1,5 @@
+"""Create the serving tables from `sql/serving/01_schema.sql`. Idempotent; safe to rerun."""
+
 from __future__ import annotations
 
 from pathlib import Path

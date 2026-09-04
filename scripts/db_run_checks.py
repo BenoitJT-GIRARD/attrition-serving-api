@@ -1,3 +1,8 @@
+"""Replay `sql/serving/02_seed_checks.sql` statement by statement and print what each returns.
+
+The fastest way to see whether a seed landed, and what the log currently holds.
+"""
+
 from pathlib import Path
 
 from sqlalchemy import text

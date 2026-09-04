@@ -1,3 +1,14 @@
+"""The five routes: health, two ways to score, and two ways to read the log back.
+
+Logging a prediction is best-effort on purpose. A database that is down should not stop the
+service from answering -- but it does mean an empty log with a healthy `/predict` is a
+silent failure, and the runbook says where to look.
+
+`/predict_by_id` reads the features from `employees` so a caller can send an id instead of
+thirty-two fields; `/history` and `/history/{employee_id}` return what was decided, with
+the threshold and the model version that decided it.
+"""
+
 from __future__ import annotations
 
 import json
