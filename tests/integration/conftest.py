@@ -41,7 +41,11 @@ def engine():
             "Start it with `docker compose up -d`, or set TEST_DATABASE_URL."
         )
     apply_schema(candidate)
-    return candidate
+    yield candidate
+    # The pool holds its connections open until the engine is disposed. Left undisposed it
+    # surfaces as a `ResourceWarning` during interpreter shutdown -- late enough that
+    # nothing fails and nobody looks.
+    candidate.dispose()
 
 
 @pytest.fixture(autouse=True)
@@ -65,7 +69,10 @@ def clean_predictions(engine):
 
 @pytest.fixture
 def client():
-    from attrition_serving.api import main
+    from attrition_serving.api import deps, main
 
+    deps.dispose_engine()
     importlib.reload(main)
-    return TestClient(main.app)
+    with TestClient(main.app) as test_client:
+        yield test_client
+    deps.dispose_engine()
