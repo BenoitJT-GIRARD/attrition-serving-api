@@ -27,6 +27,11 @@ COPY --chown=appuser:appuser data/processed/api_test ./data/processed/api_test
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 7860
 
+# The liveness probe is the service's own route, the one that answers without the model:
+# a container that starts and answers nothing looks healthy to an orchestrator without this.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/health', timeout=2)"
+
 USER appuser
 
 CMD ["uvicorn", "attrition_serving.api.main:app", "--host", "0.0.0.0", "--port", "7860"]

@@ -1,0 +1,23 @@
+# What never enters the build context.
+#
+# Without this file the daemon received the whole checkout: the git history, the virtual
+# environment, the notebooks — 98 files for an image that serves an API.
+
+.git
+.gitignore
+.gitattributes
+.github
+
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+notebooks
+docs
+tests
+reports
+
+.env
