@@ -1,7 +1,6 @@
 name: CI
 
-# No `schedule` trigger: this repository is finished, and a nightly build nobody reads would
-# burn minutes to turn red on its own one day.
+# No `schedule` trigger: this workflow runs on code changes, and at no other time.
 on:
   push:
     branches: ["main", "feat/**", "fix/**"]
@@ -51,8 +50,7 @@ jobs:
       - name: Sync dependencies
         run: uv sync --frozen --group dev --group serve --group db
 
-      # Checks only. Nothing here rewrites the tree: a job that formats before it verifies
-      # always passes, and tells you nothing.
+      # Checks only: `ruff` never rewrites the tree here. Formatting is a local hook.
       - name: Ruff
         run: uv run ruff check .
 

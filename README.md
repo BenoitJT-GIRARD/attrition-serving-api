@@ -9,8 +9,9 @@ app_port: 7860
 A model that flags employees at risk of leaving, served behind an API that records every
 decision it makes.
 
-**Project status** — finished, and archived in a runnable state. The CI is frozen to manual
-trigger so that nothing here decays into a red badge on a project nobody maintains.
+**Project status** — finished, and archived in a runnable state. The Space that hosted the
+API has been decommissioned, and the database it wrote to with it; `docker compose up`
+brings both back locally. Continuous integration runs on push and on pull requests.
 
 ## The problem
 
