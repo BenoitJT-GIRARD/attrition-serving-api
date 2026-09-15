@@ -75,7 +75,7 @@ programme can act on it.
 
 ## What each published name means
 
-`metrics.yaml` at the repository root carries the definitions the audit checks. In short:
+`metrics.yaml` at the repository root carries the definition of each one. In short:
 
 - **Average precision** — the area under the precision-recall curve. On a problem with a
   16 % base rate, a model that learns nothing scores 0.161, so the number is read against

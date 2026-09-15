@@ -35,8 +35,8 @@ jobs:
       MODEL_VERSION: "ci"
       DATABASE_URL: "postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving"
       # MODEL_THRESHOLD is deliberately unset. It used to be pinned to 0.5 here, which is
-      # the value the audit found the service falling back to, and setting it in CI would
-      # mean the tests never exercise the path that reads the model card.
+      # exactly the value the service falls back to when it cannot read the card, so pinning
+      # it in CI would mean the tests never exercise the path that reads the card.
 
     steps:
       - name: Checkout
