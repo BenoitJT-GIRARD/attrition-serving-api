@@ -1,7 +1,7 @@
 {
   "command": "uv run python scripts/smoke.py",
   "ran_at": "2026-09-15",
-  "git_revision": "e07327c656c4b0e43ff79514d4ab1c5646da0723",
+  "git_revision": "3167c75938f330d37140504bd3f3db45fb785215",
   "tool_versions": {
     "python": "3.12.12",
     "scikit-learn": "1.8.0",
