@@ -27,7 +27,7 @@ def main():
             else:
                 print("(no rows)")
 
-    print("✅ Checks executed")
+    print("[ok] checks executed")
 
 
 if __name__ == "__main__":

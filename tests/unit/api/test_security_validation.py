@@ -17,7 +17,7 @@ def client(monkeypatch):
     # No dotenv: the test decides the configuration, not whatever is on this machine.
     monkeypatch.setenv("SKIP_DOTENV", "1")
 
-    # 2) Force un environnement cohérent
+    # A complete environment, so nothing is read from a developer's own files.
     monkeypatch.setenv("API_KEY", "test_key")
     monkeypatch.setenv("MODEL_THRESHOLD", "0.5")
     monkeypatch.setenv("MODEL_VERSION", "test")
@@ -29,7 +29,7 @@ def client(monkeypatch):
     # 3) Reset config cache
     settings.reset_config_cache()
 
-    # 4) Recharger l'app après env + reset cache
+    # Reload the app after the environment is set and the config cache is cleared.
     from attrition_serving.api import main
 
     importlib.reload(main)

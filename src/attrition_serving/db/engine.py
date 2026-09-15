@@ -32,12 +32,22 @@ def get_database_url() -> str:
     return f"postgresql+psycopg://{user}:{pwd}@{host}:{port}/{name}"
 
 
+#: Hosts whose managed PostgreSQL refuses a connection without TLS, and does it with a message
+#: that names nothing useful. Adding the parameter here is cheaper than the support round trip.
+MANAGED_HOSTS = ("supabase.co",)
+
+
+def connect_args_for(url: str) -> dict[str, str]:
+    """What has to be added to a DSN before it will connect. A function, so it is testable.
+
+    It used to be four lines inside `get_engine`, where the only way to check the decision was
+    to build an engine and read back what SQLAlchemy had done with it.
+    """
+    if any(host in url for host in MANAGED_HOSTS) and "sslmode" not in url:
+        return {"sslmode": "require"}
+    return {}
+
+
 def get_engine():
     url = get_database_url()
-
-    # Supabase: SSL requis si oublié sslmode=require
-    connect_args = {}
-    if "supabase.co" in url and "sslmode" not in url:
-        connect_args = {"sslmode": "require"}
-
-    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+    return create_engine(url, pool_pre_ping=True, connect_args=connect_args_for(url))

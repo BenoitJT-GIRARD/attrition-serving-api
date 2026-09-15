@@ -1,4 +1,4 @@
-"""Paths, seeds and the one place the final model's hyper-parameters are written down.
+"""Seeds, the anonymisation key, and the one place the final model's hyper-parameters live.
 
 The threshold is deliberately absent. It lives in `models/model_card.json`, written by the
 export and read by `api/settings.py`, because a second place to write it is a second place
@@ -12,19 +12,36 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
+from attrition_serving.env import load_env
+from attrition_serving.utils.paths import (
+    DATA_DIR,
+    MODELS_DIR,
+    REPORTS_DIR,
+    ROOT_DIR,
+)
 
-# Load .env if present (never committed)
-load_dotenv(override=False)
+load_env()
+
+#: Where the extracts live. `ATTRITION_DATA_DIR` moves them off the repository tree, which is
+#: what the author's own checkout does: the tree sits on a synchronised drive, and a dataset
+#: inside it is a dataset one careless `git add -A` away from being published.
+#: `docs/data-source.md` says what belongs there and how to rebuild it.
+_env_data_dir = os.environ.get("ATTRITION_DATA_DIR", "").strip()
+_data_dir: Path = Path(_env_data_dir) if _env_data_dir else DATA_DIR
 
 
 @dataclass(frozen=True)
 class Paths:
-    root: Path = Path(__file__).resolve().parents[2]
-    data_raw: Path = root / "data" / "raw"
-    data_processed: Path = root / "data" / "processed"
-    reports: Path = root / "reports"
-    models: Path = root / "models"
+    """The named directories this project reads and writes.
+
+    They hang off `utils.paths`, which finds the root once. Nothing else computes one.
+    """
+
+    root: Path = ROOT_DIR
+    data_raw: Path = _data_dir / "raw"
+    data_processed: Path = _data_dir / "processed"
+    reports: Path = REPORTS_DIR
+    models: Path = MODELS_DIR
 
 
 @dataclass(frozen=True)

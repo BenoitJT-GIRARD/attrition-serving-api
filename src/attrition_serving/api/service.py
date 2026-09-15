@@ -30,7 +30,7 @@ def get_expected_features() -> list[str]:
     cfg = get_config()
     data = json.loads(cfg.expected_features_path.read_text(encoding="utf-8"))
     if not isinstance(data, list) or not all(isinstance(x, str) for x in data):
-        raise ValueError("expected_features.json invalide (doit être une liste de strings)")
+        raise ValueError("expected_features.json must hold a list of column names")
     return data
 
 
@@ -38,7 +38,7 @@ def get_expected_features() -> list[str]:
 def load_pipeline():
     cfg = get_config()
     if not cfg.pipeline_path.exists():
-        raise FileNotFoundError(f"Pipeline introuvable: {cfg.pipeline_path}")
+        raise FileNotFoundError(f"no model artefact at {cfg.pipeline_path}")
     return joblib.load(cfg.pipeline_path)
 
 

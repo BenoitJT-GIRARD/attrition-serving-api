@@ -20,7 +20,7 @@ you can tell the ordering survived.
 
 **The model is fitted on all the data.** The evaluation is the cross-validation; holding
 10% back from the shipped model would only make it worse at the job it is shipped to do. The
-rows in `data/processed/api_test/` are request-shape fixtures for the API tests, not an
+rows in `tests/fixtures/` are request-shape fixtures for the API tests, not an
 evaluation set, and they are in-sample by construction.
 """
 
@@ -39,6 +39,7 @@ from attrition_serving.config import (
 )
 from attrition_serving.modeling.models import make_logreg
 from attrition_serving.preprocessing import make_feature_groups
+from attrition_serving.utils.paths import TESTS_DIR
 
 TARGET = "a_quitte_l_entreprise"
 
@@ -93,10 +94,10 @@ def main() -> None:
 
     # Request-shape fixtures for the API tests. In-sample, and labelled as such: they
     # exercise the request path, they do not measure anything.
-    api_test_dir = PATHS.data_processed / "api_test"
-    api_test_dir.mkdir(parents=True, exist_ok=True)
-    X.head(10).to_json(api_test_dir / "X_test_sample.json", orient="records")
-    y.head(10).to_json(api_test_dir / "y_test_sample.json", orient="records")
+    fixtures_dir = TESTS_DIR / "fixtures"
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+    X.head(10).to_json(fixtures_dir / "employees_sample.json", orient="records")
+    y.head(10).to_json(fixtures_dir / "employees_sample_labels.json", orient="records")
 
     model_card = {
         "target": TARGET,

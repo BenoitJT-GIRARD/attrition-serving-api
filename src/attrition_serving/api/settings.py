@@ -15,22 +15,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-ROOT = Path(__file__).resolve().parents[3]  # racine repo (ajuste si besoin)
-MODELS_DIR = ROOT / "models"
-
-
-def load_env(default_env_file: str = ".env.local") -> None:
-    """
-    Read `.env` first, then the environment-specific file on top of it.
-
-    The split is deliberate: what is common to every deployment lives in the first, and
-    what is a secret of one deployment lives in the second, which is never committed.
-    """
-    load_dotenv(ROOT / ".env", override=False)
-    env_file = os.getenv("ENV_FILE", default_env_file)
-    load_dotenv(ROOT / env_file, override=True)
+from attrition_serving.env import load_env
+from attrition_serving.utils.paths import MODELS_DIR
 
 
 @dataclass(frozen=True)
@@ -89,7 +75,9 @@ def get_config() -> AppConfig:
     model_version = os.getenv("MODEL_VERSION") or model_card.get("model_version", "dev")
 
     if not database_url:
-        raise RuntimeError("DATABASE_URL manquant (vérifie .env.local ou .env.supabase)")
+        raise RuntimeError(
+            "DATABASE_URL is not set: check .env.local, or the deployment file ENV_FILE names."
+        )
 
     return AppConfig(
         api_key=api_key,

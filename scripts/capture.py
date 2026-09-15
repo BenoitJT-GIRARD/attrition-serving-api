@@ -1,0 +1,480 @@
+"""Take this repository's screenshots, and write down what each one shows.
+
+
+A screenshot is the only image of a repository that cannot be regenerated from data. What
+makes it checkable is the sentence next to it: which build was running, what had already
+happened to the application, where the displayed data came from. This script takes the picture
+and writes that sentence into ``docs/images/MANIFEST.json`` in the same gesture, because a
+manifest filled in afterwards is filled in from memory.
+
+The repository fills in :data:`CAPTURES` and nothing else. Each entry says what the image must
+*prove*: « the API answers a prediction » names a surface, « a request with a missing feature
+is refused with the field named » names a behaviour.
+
+    uv run python scripts/capture.py                 # every capture
+    uv run python scripts/capture.py --only api-docs
+    uv run python scripts/capture.py --check         # take nothing, report what is stale
+
+Two engines. Chrome headless is enough for a page that renders server-side or in one pass —
+Swagger, Airflow, a static report — as long as ``--virtual-time-budget`` is given, without
+which the picture is taken before the JavaScript has drawn anything. It is **not** enough for
+a page whose content arrives over a websocket: a Streamlit page loads an empty skeleton and
+fills it afterwards, and the virtual clock advances timers without waiting for that round
+trip, so the capture comes out black however long the budget. Those pages go through
+``playwright``, which waits for a selector that only exists once the content is there.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Self
+
+from attrition_serving.utils.paths import IMAGES_DIR, ROOT_DIR
+
+#: Logical size of every capture, and the density it is rendered at. One size for every
+#: capture: a reader comparing two pages compares two images of the same shape.
+VIEWPORT = (1280, 1000)
+DEVICE_SCALE_FACTOR = 2
+
+MANIFEST = IMAGES_DIR / "MANIFEST.json"
+SOURCE = "scripts/capture.py"
+
+
+@dataclass(frozen=True)
+class Capture:
+    """One image, and everything a reader needs to believe it.
+
+    ``app_state`` is described precisely enough to be reproduced: « after 300 scoring
+    requests, two of them refused », and never « with data ». ``data_source`` names where what
+    is displayed comes from; a capture never redistributes someone else's work, so a
+    third-party source is refused outright.
+    """
+
+    name: str
+    route: str
+    app_state: str
+    demonstrates_behaviour: str
+    data_source: str
+    engine: str = "chrome"
+    #: A selector that exists only once the content has arrived. Required by the playwright
+    #: engine, ignored by Chrome.
+    ready_selector: str | None = None
+    #: What to do before the picture, in order. Each step is ``(action, target, value)``:
+    #: ``("click", role, accessible name)``, ``("open", css selector, "")``,
+    #: ``("fill", css selector, text)``,
+    #: ``("scroll", css selector, "")``. A capture of an answer needs the three: click the
+    #: control, type a real question, bring the response into the frame.
+    steps: tuple[tuple[str, str, str], ...] = ()
+    #: The twin image, when the product has a nominal and a degraded behaviour. A refusal
+    #: shown alone reads as a failure; shown next to the nominal answer it reads as a design.
+    paired_with: str | None = None
+    depends_on: tuple[str, ...] = ()
+
+    @property
+    def target(self) -> str:
+        return f"{BASE_URL}{self.route}"
+
+    @property
+    def path(self) -> Path:
+        return IMAGES_DIR / f"{self.name}.png"
+
+
+#: Where the service listens once started, and the command that starts it. Both are quoted in
+#: the README's « Running it » section: a capture taken against a service started some other
+#: way proves something about that other way.
+BASE_URL = "http://127.0.0.1:8000"
+SERVE_COMMAND: tuple[str, ...] = (
+    "uv",
+    "run",
+    "--frozen",
+    "uvicorn",
+    "attrition_serving.api.main:app",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8000",
+)
+#: The route that answers once the product is ready. ``None`` when there is nothing to start
+#: and nothing to wait for — a page served from the filesystem.
+HEALTH_ROUTE: str | None = "/health"
+
+#: The repository's captures. Nothing else in this file changes from one repository to
+#: the next.
+#: The key the capture session runs with. Every route but `/health` needs one, and Swagger
+#: echoes the header into the curl block it displays -- so the captured service is started
+#: with a throwaway key that means nothing anywhere, and the image can be published as it is.
+CAPTURE_KEY = "capture-demo-key"
+
+#: Authorising, in the Swagger dialog. Four steps, and the reason they are here: without them
+#: the picture shows a 401, which is a true answer to a question nobody asked.
+AUTHORISE: tuple[tuple[str, str, str], ...] = (
+    ("open", "button.btn.authorize", ""),
+    ("fill", ".auth-container input[type='text']", CAPTURE_KEY),
+    ("open", ".auth-btn-wrapper button.authorize", ""),
+    ("open", ".auth-btn-wrapper button.btn-done", ""),
+)
+
+CAPTURES: tuple[Capture, ...] = (
+    Capture(
+        name="api-docs",
+        route="/docs",
+        app_state=(
+            "the service started from the committed model card, against the PostgreSQL that "
+            "`docker compose up -d` brings up, with the ten request fixtures seeded and no "
+            "prediction made yet"
+        ),
+        demonstrates_behaviour=(
+            "the five routes and the API-key scheme are generated from the Pydantic models, "
+            "so the page a caller reads cannot drift from the contract the service enforces"
+        ),
+        data_source="none: the page is generated from the Pydantic models",
+        depends_on=(
+            "src/attrition_serving/api/main.py",
+            "src/attrition_serving/api/schemas.py",
+        ),
+    ),
+    Capture(
+        name="prediction-logged",
+        route="/docs#/prediction/predict_by_id_predict_by_id__employee_id__post",
+        engine="playwright",
+        app_state=(
+            "the same service, authorised in the Swagger dialog with a throwaway key, then "
+            "POST /predict_by_id/1 executed from the documentation page against employee 1 "
+            "of the seeded fixtures"
+        ),
+        demonstrates_behaviour=(
+            "the answer carries the threshold that turned the probability into a decision, "
+            "the version of the model that produced it, and `stored: true` with the row id "
+            "the decision was written to -- which is the claim this repository exists to make"
+        ),
+        data_source=(
+            "one of the ten fictional rows under tests/fixtures/, seeded into the employees "
+            "table by scripts/db_seed_employees.py"
+        ),
+        ready_selector="div.responses-wrapper pre",
+        steps=(
+            *AUTHORISE,
+            ("open", "#operations-prediction-predict_by_id_predict_by_id__employee_id__post", ""),
+            ("click", "button", "Try it out"),
+            ("fill", "input[placeholder='employee_id']", "1"),
+            ("click", "button", "Execute"),
+            ("scroll", "div.responses-wrapper", ""),
+        ),
+        depends_on=(
+            "src/attrition_serving/api/routers/predict.py",
+            "models/model_card.json",
+        ),
+    ),
+    Capture(
+        name="decision-history",
+        route="/docs#/prediction/history_by_id_history__employee_id__get",
+        engine="playwright",
+        app_state=(
+            "the same service after the prediction above, so the decision log holds at least "
+            "one row for employee 1"
+        ),
+        demonstrates_behaviour=(
+            "GET /history/1 returns what was decided for that employee and when, each row "
+            "carrying its own threshold and model version: a past decision can be explained "
+            "without guessing which model made it"
+        ),
+        data_source="the decision log this service wrote in the capture above",
+        ready_selector="div.responses-wrapper pre",
+        steps=(
+            *AUTHORISE,
+            ("open", "#operations-prediction-history_by_id_history__employee_id__get", ""),
+            ("click", "button", "Try it out"),
+            ("fill", "input[placeholder='employee_id']", "1"),
+            ("click", "button", "Execute"),
+            ("scroll", "div.responses-wrapper", ""),
+        ),
+        paired_with="prediction-logged",
+        depends_on=("src/attrition_serving/api/routers/predict.py",),
+    ),
+)
+
+
+# --- Starting the product, and knowing when it is up ------------------------
+
+
+def _answers(url: str) -> bool:
+    """Whether something is already serving that URL, right now."""
+    try:
+        with urllib.request.urlopen(url, timeout=1) as answer:
+            return answer.status < 500
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def wait_until_healthy(url: str, *, timeout: float = 90.0) -> None:
+    """Poll until the service answers. Never sleep a fixed number of seconds.
+
+    A fixed sleep is either too short on a cold start, and the capture photographs a
+    connection error, or wasted on every run afterwards.
+    """
+    deadline = time.monotonic() + timeout
+    last: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=2) as answer:
+                if answer.status < 500:
+                    return
+        except (urllib.error.URLError, OSError) as exc:  # not up yet
+            last = exc
+        time.sleep(0.25)
+    raise TimeoutError(f"{url} never answered in {timeout:.0f}s ({last})")
+
+
+class Serving:
+    """Start the product, wait for it, capture, stop it — even when a capture raises."""
+
+    def __init__(self, command: tuple[str, ...], health: str | None):
+        self.command = command
+        self.health = health
+        self.process: subprocess.Popen | None = None
+
+    def __enter__(self) -> Self:
+        if self.health is None:
+            return self
+        if not self.command:
+            wait_until_healthy(self.health, timeout=5)
+            return self
+        # Something already answering on that port gets photographed in place of the
+        # product: a server left over from an earlier run serves an older build, and its
+        # picture is indistinguishable from a fresh one.
+        if _answers(self.health):
+            raise RuntimeError(
+                f"{self.health} already answers: stop what is listening before capturing, "
+                "or the picture will be of that and not of this build"
+            )
+        self.process = subprocess.Popen(
+            list(self.command), cwd=ROOT_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
+        wait_until_healthy(self.health)
+        return self
+
+    def __exit__(self, *_exception) -> None:
+        """Stop the whole tree. `uv run uvicorn` is two processes, and killing the first
+        leaves the second holding the port for the next run."""
+        if self.process is None:
+            return
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        else:
+            self.process.terminate()
+        try:
+            self.process.wait(timeout=20)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+
+
+# --- The two engines --------------------------------------------------------
+
+
+def _chrome_binary() -> str:
+    """The browser on this machine, named by the environment and never guessed.
+
+    A path hard-coded here would be one machine's installation shipped inside a published
+    repository; ``CHROME_PATH`` keeps that constraint where it belongs.
+    """
+    explicit = os.environ.get("CHROME_PATH")
+    if explicit:
+        return explicit
+    for name in ("chrome", "google-chrome", "chromium"):
+        found = shutil.which(name)
+        if found:
+            return found
+    raise RuntimeError(
+        "no Chrome on PATH: set CHROME_PATH to the browser's executable, or run the "
+        "capture with --engine playwright"
+    )
+
+
+def by_chrome(capture: Capture) -> None:
+    """One pass, headless. `--virtual-time-budget` is what makes a JavaScript page render."""
+    width, height = VIEWPORT
+    subprocess.run(
+        [
+            _chrome_binary(),
+            "--headless",
+            "--disable-gpu",
+            "--no-sandbox",
+            "--hide-scrollbars",
+            "--virtual-time-budget=8000",
+            f"--window-size={width},{height}",
+            f"--force-device-scale-factor={DEVICE_SCALE_FACTOR}",
+            f"--screenshot={capture.path}",
+            capture.target,
+        ],
+        check=True,
+        cwd=ROOT_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def by_playwright(capture: Capture) -> None:
+    """For a page whose content arrives over a websocket, and that Chrome photographs black.
+
+    ``channel="chrome"`` reuses the system browser: no download, and the picture is taken by
+    the same engine a reader would open the page with.
+    """
+    from playwright.sync_api import sync_playwright  # installed in the capture environment
+
+    width, height = VIEWPORT
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(channel="chrome")
+        page = browser.new_page(
+            viewport={"width": width, "height": height},
+            device_scale_factor=DEVICE_SCALE_FACTOR,
+        )
+        page.goto(capture.target, wait_until="networkidle", timeout=90_000)
+        for action, target, value in capture.steps:
+            if action == "click":
+                # `.first`: a Swagger operation carries a title button and an arrow button
+                # under the same accessible name, and the first in document order is the one
+                # a reader sees and clicks.
+                page.get_by_role(target, name=value).first.click()
+            elif action == "open":
+                # A control named by a CSS selector rather than by an accessible name. A
+                # Swagger operation reached through a deep link is not always expanded by the
+                # time the page settles, and its « Try it out » button is not in the DOM
+                # until it is: clicking the operation's own header is what puts it there.
+                page.locator(target).first.click()
+            elif action == "fill":
+                page.locator(target).first.fill(value)
+            elif action == "scroll":
+                page.locator(target).first.scroll_into_view_if_needed()
+            else:
+                raise ValueError(f"{capture.name}: unknown capture step « {action} »")
+            page.wait_for_timeout(300)
+        if capture.ready_selector:
+            page.wait_for_selector(capture.ready_selector, timeout=180_000)
+        page.wait_for_timeout(4000)  # let the animations settle
+        page.screenshot(path=str(capture.path))
+        browser.close()
+
+
+ENGINES = {"chrome": by_chrome, "playwright": by_playwright}
+
+
+# --- Writing down what was photographed -------------------------------------
+
+
+def _git_revision() -> str | None:
+    try:
+        done = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT_DIR, capture_output=True, text=True, check=True
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return done.stdout.strip() or None
+
+
+def record(capture: Capture) -> dict:
+    """The manifest entry for an image that has just been written."""
+    if capture.data_source == "third_party":
+        raise ValueError(
+            f"{capture.name}: a capture does not redistribute someone else's work. "
+            "Photograph the product against data this repository may publish."
+        )
+    entry = {
+        "sha256": hashlib.sha256(capture.path.read_bytes()).hexdigest(),
+        "written": datetime.now(tz=UTC).date().isoformat(),
+        "source": SOURCE,
+        "command": f"uv run python {SOURCE} --only {capture.name}",
+        "target": capture.target,
+        "viewport": list(VIEWPORT),
+        "device_scale_factor": DEVICE_SCALE_FACTOR,
+        "app_state": capture.app_state,
+        "data_source": capture.data_source,
+        "demonstrates_behaviour": capture.demonstrates_behaviour,
+    }
+    revision = _git_revision()
+    if revision:
+        entry["git_revision"] = revision
+    if capture.paired_with:
+        entry["paired_with"] = f"{capture.paired_with}.png"
+    if capture.depends_on:
+        entry["depends_on"] = list(capture.depends_on)
+    return entry
+
+
+def write_manifest(entries: dict[str, dict]) -> None:
+    """Merge into the manifest. An image nobody re-took keeps the entry it had."""
+    payload: dict = {"schema": "image-manifest/1", "images": {}}
+    if MANIFEST.exists():
+        with contextlib.suppress(json.JSONDecodeError):
+            payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    payload.setdefault("schema", "image-manifest/1")
+    payload.setdefault("images", {})
+    payload["images"].update(entries)
+    payload["images"] = dict(sorted(payload["images"].items()))
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline=""
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--only", help="a single capture, by name")
+    parser.add_argument(
+        "--check", action="store_true", help="take nothing; report what the manifest is missing"
+    )
+    arguments = parser.parse_args(argv)
+
+    wanted = [c for c in CAPTURES if not arguments.only or c.name == arguments.only]
+    if not wanted:
+        print("no capture selected", file=sys.stderr)
+        return 1
+
+    if arguments.check:
+        known = {}
+        if MANIFEST.exists():
+            known = json.loads(MANIFEST.read_text(encoding="utf-8")).get("images", {})
+        stale = [
+            c.name
+            for c in wanted
+            if not c.path.exists()
+            or known.get(c.path.name, {}).get("sha256")
+            != hashlib.sha256(c.path.read_bytes()).hexdigest()
+        ]
+        for name in stale:
+            print(f"  {name} is missing or does not match its manifest entry")
+        return 1 if stale else 0
+
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    entries: dict[str, dict] = {}
+    health = f"{BASE_URL}{HEALTH_ROUTE}" if HEALTH_ROUTE else None
+    with Serving(SERVE_COMMAND, health):
+        for capture in wanted:
+            ENGINES[capture.engine](capture)
+            entries[capture.path.name] = record(capture)
+            print(f"{capture.name:24} {capture.path.relative_to(ROOT_DIR)}")
+    write_manifest(entries)
+    print(f"{len(entries)} capture(s), {MANIFEST.relative_to(ROOT_DIR)} updated")
+    print("Read every image before committing it: no key, no token, no address on screen.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,164 @@
+# What the published numbers mean.
+#
+# The dataset is imbalanced -- 237 departures in 1 470 rows -- and every metric below is read
+# against that. Accuracy is absent on purpose: predicting "stays" for everyone scores 84 % and
+# finds nobody. Each entry names what it measures, the artefact the value comes from, what it
+# means for an HR team, and what the spread beside it covers.
+
+metrics:
+
+  average_precision:
+    definition: >-
+      The area under the precision-recall curve: how well the model keeps its alert list clean
+      as it grows. Averaged over the 25 folds of the cross-validation.
+    unit: "proportion, 0 to 1"
+    direction: higher_is_better
+    anchor: "0.607 — reports/evaluation_summary.json#arms.none.average_precision_mean"
+    business_reading: >-
+      A model that learns nothing scores the base rate, 0.161. This one scores three to four
+      times that: at any list length, the share of the list that really leaves is that much
+      higher than picking names at random.
+    source: "scripts/run_evaluation.py, 5x5 repeated stratified cross-validation over the 1 470 rows"
+    uncertainty: >-
+      Standard deviation across the 25 folds, not a standard error. It is the spread the
+      number has between folds of 294 rows, which is what another sample of this size would
+      look like.
+
+  roc_auc:
+    definition: >-
+      The probability that a randomly chosen leaver is ranked above a randomly chosen stayer.
+      Insensitive to where the threshold sits, and to the class balance.
+    unit: "proportion, 0.5 to 1"
+    direction: higher_is_better
+    anchor: "0.823 — reports/evaluation_summary.json#arms.none.roc_auc_mean"
+    business_reading: >-
+      Put one person who left and one who stayed side by side: the model puts them in the
+      right order four times out of five. It says nothing about where the alert list should
+      stop.
+    source: "scripts/run_evaluation.py, same folds as average precision"
+    uncertainty: "Standard deviation across the 25 folds."
+
+  calibration_error:
+    definition: >-
+      The expected calibration error over ten equal-population bins: the average gap between a
+      predicted probability and the share of that bin who actually left. Bins hold equal
+      populations and not equal widths, because the scores pile up near zero.
+    unit: "proportion, 0 to 1"
+    direction: lower_is_better
+    anchor: "0.0147 — reports/evaluation_summary.json#arms.crossfit.calibration.ece"
+    business_reading: >-
+      When the service returns 0.30, about thirty employees in a hundred with that score do
+      leave. Before recalibration the same 0.30 meant nine, and a manager reading the number
+      as a risk would have been wrong by a factor of three.
+    source: "scripts/run_evaluation.py, on the pooled out-of-fold predictions"
+    uncertainty: >-
+      Reported as a point value over 7 350 scored rows. It is a summary of a curve, and
+      `reports/calibration.csv` publishes the curve it summarises.
+
+  mean_predicted_risk:
+    definition: "The mean of the probabilities the arm returns, over every scored row."
+    unit: "proportion, 0 to 1"
+    direction: target
+    anchor: "0.163 — reports/evaluation_summary.json#arms.crossfit.calibration.mean_predicted"
+    business_reading: >-
+      Compared with the true departure rate of 0.161, it says whether the service is
+      systematically alarmist. The raw scores averaged 0.375, which would have told an HR team
+      that a third of the company was leaving.
+    source: "scripts/run_evaluation.py, on the pooled out-of-fold predictions"
+    uncertainty: "A point value over 7 350 scored rows; the base rate it is read against is 0.161."
+
+  threshold:
+    definition: >-
+      The score at or above which the service decides to flag. Chosen inside each fold on a
+      validation split the scoring fold never sees, at the cost ratio the model card records.
+    unit: "probability, 0 to 1"
+    direction: target
+    anchor: "0.1105 — models/model_card.json#default_threshold"
+    business_reading: >-
+      The line between "put this person on the list" and "do not". Moving it is the only
+      decision an employer has to make here, and `reports/cost_curve.csv` prices every choice.
+    source: "scripts/run_evaluation.py, expected-cost minimum at a ratio of 8"
+    uncertainty: >-
+      Standard deviation across the five repeats, 0.019. The service applies one frozen value,
+      and the spread says how much the choice itself depends on the draw.
+
+  alert_rate:
+    definition: "The share of employees the service flags at the shipped threshold."
+    unit: "proportion, 0 to 1"
+    direction: target
+    anchor: "0.369 — reports/cost_curve.csv#ratio=8,alert_rate_mean"
+    business_reading: >-
+      Thirty-seven employees in a hundred land on the retention list. That is the workload the
+      threshold creates, and the reason the curve stops being useful past a ratio of 13, where
+      the list covers half the company.
+    source: "scripts/run_evaluation.py, mean over the 25 folds"
+    uncertainty: "Standard deviation across the folds, published beside it in the same table."
+
+  base_rate:
+    definition: "The share of a population that left, measured and not predicted."
+    unit: "proportion, 0 to 1"
+    direction: target
+    anchor: "0.161 — reports/evaluation_summary.json#protocol.prevalence"
+    business_reading: >-
+      Sixteen employees in a hundred left over the period the extract covers. Every other
+      number here is read against it: a model that flags a group at twice its own base rate
+      is behaving the same way for that group as for any other.
+    source: "scripts/run_evaluation.py, and reports/subgroups.csv per group"
+    uncertainty: >-
+      A count over the whole dataset, so it has no sampling spread of its own. Per group it
+      does, and the smallest group carries 63 employees.
+
+  recall:
+    definition: >-
+      The share of the people who actually left that the alert list contains, at the shipped
+      threshold.
+    unit: "proportion, 0 to 1"
+    direction: higher_is_better
+    anchor: "0.781 — reports/cost_curve.csv#ratio=8,recall_mean"
+    business_reading: >-
+      Four departures in five appear on the list in time for a conversation. The fifth does
+      not, and no threshold catches it without lengthening the list for everyone.
+    source: "scripts/run_evaluation.py, mean over the 25 folds"
+    uncertainty: "Standard deviation across the folds, published beside it in the same table."
+
+  precision:
+    definition: "The share of the alert list that really left."
+    unit: "proportion, 0 to 1"
+    direction: higher_is_better
+    anchor: "0.346 — reports/cost_curve.csv#ratio=8,precision_mean"
+    business_reading: >-
+      Two conversations in three are held with someone who was not going to leave. That is the
+      price of catching four departures in five, and it is exactly what the cost ratio of
+      eight says an employer is willing to pay.
+    source: "scripts/run_evaluation.py, mean over the 25 folds"
+    uncertainty: "Standard deviation across the folds, published beside it in the same table."
+
+  recall_optimism:
+    definition: >-
+      The recall obtained on the inner validation split minus the recall obtained on the
+      scoring fold, for the same model.
+    unit: "proportion, a difference"
+    direction: lower_is_better
+    anchor: "0.0074 — reports/evaluation_summary.json#arms.none.recall_optimism"
+    business_reading: >-
+      How much a recall measured where the threshold was chosen flatters the model. The
+      previous version of this repository chose its threshold on the test set, which drives
+      this to zero by construction and hides it.
+    source: "scripts/run_evaluation.py, mean over the 25 folds"
+    uncertainty: >-
+      A difference of two fold means, each with a standard deviation near 0.086. It is a
+      direction, not a precise quantity.
+
+  permutation_importance:
+    definition: >-
+      The average precision lost when one column is shuffled, measured on the fold that did
+      not fit the model, ten shuffles per fold.
+    unit: "average precision, a loss"
+    direction: higher_is_better
+    anchor: "0.193 — reports/permutation_importance.csv#heure_supplementaires,importance_mean"
+    business_reading: >-
+      Overtime carries more of the ranking than any other column, by a factor of two over the
+      next one. It is a description of the model, not of the cause: the model would rank worse
+      without the column, which is not the same as overtime making people leave.
+    source: "scripts/run_evaluation.py, permutation importance inside the 25 folds"
+    uncertainty: "Standard deviation across the 25 folds, published beside each value."

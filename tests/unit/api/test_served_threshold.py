@@ -20,8 +20,9 @@ import pytest
 
 from attrition_serving.api.settings import get_config, reset_config_cache
 from attrition_serving.config import PATHS
+from attrition_serving.utils.paths import TESTS_DIR
 
-SAMPLES = PATHS.data_processed / "api_test" / "X_test_sample.json"
+SAMPLES = TESTS_DIR / "fixtures" / "employees_sample.json"
 
 
 @pytest.fixture

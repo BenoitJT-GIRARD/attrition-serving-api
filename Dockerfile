@@ -19,10 +19,9 @@ RUN uv sync --frozen --no-dev --group serve --group db --no-install-project
 COPY --chown=appuser:appuser src ./src
 RUN uv sync --frozen --no-dev --group serve --group db
 
+# The served artefacts, and nothing else. The schema, the seeding and the request
+# fixtures are operator work, run from a checkout against the same database.
 COPY --chown=appuser:appuser models ./models
-COPY --chown=appuser:appuser sql ./sql
-COPY --chown=appuser:appuser scripts ./scripts
-COPY --chown=appuser:appuser data/processed/api_test ./data/processed/api_test
 
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 7860

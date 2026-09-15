@@ -17,13 +17,9 @@ Writes `reports/data_quality.csv`, `reports/cleaning_trace.csv` and
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pandas as pd
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 from attrition_serving.config import PATHS
 from attrition_serving.preprocessing import make_feature_groups

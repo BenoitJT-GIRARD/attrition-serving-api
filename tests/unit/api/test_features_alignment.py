@@ -5,16 +5,17 @@ else.
 """
 
 import json
-from pathlib import Path
 
 import pandas as pd
 
+from attrition_serving.utils.paths import MODELS_DIR
+
 
 def test_expected_features_alignment_builds_ordered_df():
-    expected_path = Path("models/expected_features.json")
+    expected_path = MODELS_DIR / "expected_features.json"
     expected = json.loads(expected_path.read_text(encoding="utf-8"))
 
-    # payload incomplet exprès
+    # Deliberately incomplete: two features short of the contract.
     payload = {
         "age": 35,
         "genre": "M",

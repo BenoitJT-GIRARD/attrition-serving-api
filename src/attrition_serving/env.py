@@ -1,37 +1,34 @@
-"""Loading the environment file, once, from the repository root.
+"""Loading the environment files, once, from the repository root.
 
 Separate from `config` so that a test can import the settings without a dotenv appearing
-underneath it: `SKIP_DOTENV=1` is what the API tests set.
+underneath it: `SKIP_DOTENV=1` is what the API tests set, and it is honoured here for every
+caller. An already-defined variable is never overwritten, so a stray `.env.local` on a
+developer's machine cannot change what a CI run or a test reads.
 """
 
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 
-ROOT = Path(__file__).resolve().parents[2]  # repo root (src/attrition_serving/env.py -> parents[2])
+from attrition_serving.utils.paths import ROOT_DIR
 
 
 def load_env(default_env_file: str = ".env.local") -> None:
-    """
-    Charge .env puis un override (ENV_FILE) : .env.local ou .env.supabase.
+    """Read `.env`, then the deployment-specific file named by `ENV_FILE`.
 
-    Règles:
-    - En CI/tests : SKIP_DOTENV=1 => on ne charge rien.
-    - Ne JAMAIS écraser une variable déjà définie (override=False),
-      sinon la CI/secrets peuvent être écrasés par un .env local.
-    - a file that does not exist is skipped rather than raising;
+    The split is deliberate: what is common to every deployment lives in the first, and what
+    is a secret of one deployment lives in the second, which is never committed. A file that
+    does not exist is skipped.
     """
     if os.getenv("SKIP_DOTENV", "") == "1":
         return
 
-    base_path = ROOT / ".env"
+    base_path = ROOT_DIR / ".env"
     if base_path.exists():
         load_dotenv(base_path, override=False)
 
-    env_file = os.getenv("ENV_FILE", default_env_file)
-    env_path = ROOT / env_file
+    env_path = ROOT_DIR / os.getenv("ENV_FILE", default_env_file)
     if env_path.exists():
         load_dotenv(env_path, override=False)

@@ -6,11 +6,15 @@ because nothing set a connect timeout.
 """
 
 import json
-from pathlib import Path
 
+import pytest
 from sqlalchemy import text
 
-SAMPLE_PATH = Path("data/processed/api_test/X_test_sample.json")
+from attrition_serving.utils.paths import TESTS_DIR
+
+pytestmark = pytest.mark.integration
+
+SAMPLE_PATH = TESTS_DIR / "fixtures" / "employees_sample.json"
 
 
 def _count_predictions(engine) -> int:
@@ -20,7 +24,7 @@ def _count_predictions(engine) -> int:
 
 def _load_one_valid_payload() -> dict:
     rows = json.loads(SAMPLE_PATH.read_text(encoding="utf-8"))
-    assert len(rows) > 0, "X_test_sample.json est vide"
+    assert len(rows) > 0, f"{SAMPLE_PATH.name} holds no row"
     # the first row is enough: this asserts the round trip, not the model
     return {"features": rows[0]}
 

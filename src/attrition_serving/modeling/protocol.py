@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.inspection import permutation_importance
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import (
     average_precision_score,
@@ -200,6 +201,88 @@ def evaluate_cv(
     return pd.DataFrame(rows), pd.concat(oof, ignore_index=True)
 
 
+#: The recall grid the precision-recall curves are interpolated onto, so that several runs
+#: can be averaged at all: two curves from two folds have their own recall breakpoints, and
+#: averaging them pointwise would average different quantities.
+RECALL_GRID = np.linspace(0.0, 1.0, 101)
+
+
+def pr_curve(out_of_fold: pd.DataFrame) -> pd.DataFrame:
+    """The precision-recall curve, averaged over the repeats, with the spread it has.
+
+    One repeat is a complete out-of-fold scoring of every row, so a repeat is the unit that
+    carries a whole curve. Five of them give a mean and a standard error at each recall; a
+    single curve would say nothing about how much of its shape is the draw.
+    """
+    curves = []
+    for _repeat, block in out_of_fold.groupby("repeat"):
+        precision, recall, _thresholds = precision_recall_curve(
+            block["y_true"].to_numpy(), block["y_score"].to_numpy()
+        )
+        # `precision_recall_curve` returns recall decreasing; np.interp needs it increasing.
+        curves.append(np.interp(RECALL_GRID, recall[::-1], precision[::-1]))
+    stack = np.vstack(curves)
+    n = stack.shape[0]
+    return pd.DataFrame(
+        {
+            "recall": RECALL_GRID,
+            "precision_mean": stack.mean(axis=0),
+            "precision_sem": stack.std(axis=0, ddof=1) / np.sqrt(n),
+            "n_repeats": n,
+        }
+    )
+
+
+def permutation_importance_cv(
+    X: pd.DataFrame,
+    y: pd.Series,
+    make_pipeline,
+    params: dict | None = None,
+    config: ProtocolConfig | None = None,
+    n_repeats: int = 10,
+) -> pd.DataFrame:
+    """How much average precision each feature is worth, measured on folds it did not fit.
+
+    One fit per outer fold, and the shuffling happens on the scoring fold only. The previous
+    version of this table came from a notebook, on the 147 rows of the abandoned 90/10 split,
+    and was published next to numbers computed another way entirely.
+    """
+    cfg = config or ProtocolConfig()
+    y = pd.Series(y).astype(int).reset_index(drop=True)
+    X = X.reset_index(drop=True)
+
+    splitter = RepeatedStratifiedKFold(
+        n_splits=cfg.n_splits, n_repeats=cfg.n_repeats, random_state=cfg.seed
+    )
+    drops: list[pd.Series] = []
+    for position, (train_idx, test_idx) in enumerate(splitter.split(X, y)):
+        model = clone(make_pipeline())
+        if params:
+            model.set_params(**params)
+        model.fit(X.iloc[train_idx], y.iloc[train_idx])
+        result = permutation_importance(
+            model,
+            X.iloc[test_idx],
+            y.iloc[test_idx],
+            scoring="average_precision",
+            n_repeats=n_repeats,
+            random_state=cfg.seed + position,
+            n_jobs=1,
+        )
+        drops.append(pd.Series(result.importances_mean, index=X.columns))
+
+    table = pd.concat(drops, axis=1)
+    out = pd.DataFrame(
+        {
+            "feature": table.index,
+            "importance_mean": table.mean(axis=1).to_numpy(),
+            "importance_sd": table.std(axis=1, ddof=1).to_numpy(),
+            "n_folds": table.shape[1],
+        }
+    )
+    return out.sort_values("importance_mean", ascending=False).reset_index(drop=True)
+
+
 def summarise(per_fold: pd.DataFrame) -> dict[str, float | int]:
     """Mean and spread across folds, for every quantity the repository publishes."""
     summary: dict[str, float | int] = {
@@ -272,8 +355,11 @@ def cost_curve(
             cost_mean=("expected_cost_per_employee", "mean"),
             cost_sd=("expected_cost_per_employee", "std"),
             recall_mean=("recall", "mean"),
+            recall_sd=("recall", "std"),
             precision_mean=("precision", "mean"),
+            precision_sd=("precision", "std"),
             alert_rate_mean=("alert_rate", "mean"),
+            alert_rate_sd=("alert_rate", "std"),
         )
         .reset_index()
     )
@@ -310,6 +396,31 @@ def reliability(out_of_fold: pd.DataFrame, n_bins: int = 10) -> tuple[pd.DataFra
     }
 
 
+#: What the published subgroup table calls each attribute and each of its values. The
+#: extracts carry French labels and an encoded gender; a table whose rows a reader cannot
+#: match to the CSV beside it is a table nobody can check, and the README used to translate
+#: them silently on its way out.
+ATTRIBUTE_LABELS = {
+    "genre": "gender",
+    "statut_marital": "marital status",
+    "departement": "department",
+}
+
+SUBGROUP_LABELS = {
+    "genre": {"0": "female", "1": "male", "F": "female", "M": "male"},
+    "statut_marital": {
+        "Célibataire": "single",
+        "Divorcé(e)": "divorced",
+        "Marié(e)": "married",
+    },
+    "departement": {
+        "Commercial": "Sales",
+        "Consulting": "R&D",
+        "Ressources Humaines": "HR",
+    },
+}
+
+
 def subgroup_rates(
     out_of_fold: pd.DataFrame,
     features: pd.DataFrame,
@@ -329,12 +440,13 @@ def subgroup_rates(
     records: list[dict] = []
     for column in columns:
         for value, block in joined.groupby(column, observed=True):
+            label = SUBGROUP_LABELS.get(column, {}).get(str(value), str(value))
             positives = int(block["y_true"].sum())
             enough = positives >= min_positive
             records.append(
                 {
-                    "attribute": column,
-                    "group": str(value),
+                    "attribute": ATTRIBUTE_LABELS.get(column, column),
+                    "group": label,
                     "n": len(block),
                     "n_positive": positives,
                     # The base rate has to sit next to the alert rate, or the two get

@@ -16,6 +16,10 @@ Writes to `reports/`:
 ``cost_curve.csv``          the threshold that minimises expected cost, per cost ratio
 ``calibration.csv``         reliability with equal-population bins, per arm
 ``subgroups.csv``           alert rate and recall per subgroup at the shipped threshold
+``pr_curves.csv``           the precision-recall curve of each model family, averaged over
+                            the five repeats, with the standard error at each recall
+``permutation_importance.csv`` what shuffling each feature costs in average precision,
+                            measured on folds that did not fit the model
 
 The single split is recomputed on purpose: knowing whether it was a favourable draw is part
 of the result, and it is the only way to say what changed and by how much.
@@ -24,15 +28,10 @@ of the result, and it is the only way to say what changed and by how much.
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import train_test_split
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 from attrition_serving.config import FINAL_MODEL_PARAMS, PATHS, SETTINGS
 from attrition_serving.modeling.models import make_dummy, make_logreg, make_random_forest
@@ -40,6 +39,8 @@ from attrition_serving.modeling.protocol import (
     ProtocolConfig,
     cost_curve,
     evaluate_cv,
+    permutation_importance_cv,
+    pr_curve,
     reliability,
     subgroup_rates,
     summarise,
@@ -151,14 +152,28 @@ def main() -> None:
     # The three model families, same folds, no calibration and no tuning: this is the
     # comparison the notebook asserted in prose.
     baseline_rows = []
+    curves = []
     for name, factory in BASELINES.items():
         params = FINAL_MODEL_PARAMS if name == "logreg" else None
-        folds, _oof = evaluate_cv(
+        folds, oof = evaluate_cv(
             X, y, lambda f=factory: f(groups), params=params, config=ProtocolConfig()
         )
         baseline_rows.append({"model": name, **summarise(folds)})
+        if name != "dummy":
+            # A constant classifier has no precision-recall curve: every row gets the same
+            # score, so the curve is the single point (recall 1, precision = base rate).
+            # Interpolating it draws a diagonal that looks like it beats the forest.
+            curves.append(pr_curve(oof).assign(model=name))
     baselines = pd.DataFrame(baseline_rows)
     baselines.to_csv(PATHS.reports / "baselines.csv", index=False)
+    pd.concat(curves, ignore_index=True).to_csv(PATHS.reports / "pr_curves.csv", index=False)
+
+    # Feature importance, in the folds. The published table used to come out of a notebook,
+    # computed on the 147 rows of the split this protocol replaced.
+    importance = permutation_importance_cv(
+        X, y, lambda: make_logreg(groups), params=FINAL_MODEL_PARAMS
+    )
+    importance.to_csv(PATHS.reports / "permutation_importance.csv", index=False)
 
     curve = cost_curve(out_of_fold[SHIPPED_ARM], ratios=COST_RATIOS)
     curve.to_csv(PATHS.reports / "cost_curve.csv", index=False)
@@ -219,6 +234,8 @@ def main() -> None:
         "cost_curve.csv",
         "calibration.csv",
         "subgroups.csv",
+        "pr_curves.csv",
+        "permutation_importance.csv",
     ):
         print(f"  [ok] reports/{path}")
 

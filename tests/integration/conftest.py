@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib
 import os
+from pathlib import Path
 
 import pytest
 import sqlalchemy
@@ -76,3 +77,30 @@ def client():
     with TestClient(main.app) as test_client:
         yield test_client
     deps.dispose_engine()
+
+
+TIER = "integration"
+
+#: This directory. `pytest_collection_modifyitems` is handed EVERY collected item, not only
+#: the ones below the conftest that defines it, so the hook filters by path: without this the
+#: system tier reports the integration tier's files as unmarked. The marker is read with
+#: `get_closest_marker`, never from `item.keywords` — the keywords carry the names of the
+#: parent nodes, so the directory called `integration` makes every file in it look marked.
+HERE = Path(__file__).resolve().parent
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    unmarked = sorted(
+        {
+            str(item.path.relative_to(HERE))
+            for item in items
+            if getattr(item, "path", None) is not None
+            and HERE in item.path.parents
+            and item.get_closest_marker(TIER) is None
+        }
+    )
+    if unmarked:
+        raise pytest.UsageError(
+            f"{len(unmarked)} file(s) under tests/{TIER}/ without "
+            f"`pytestmark = pytest.mark.{TIER}`: " + ", ".join(unmarked)
+        )

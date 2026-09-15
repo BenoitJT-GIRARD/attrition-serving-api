@@ -20,7 +20,7 @@ def main() -> None:
     with engine.begin() as conn:
         conn.execute(text(sql))
 
-    print("✅ Schema applied")
+    print("[ok] schema applied")
 
 
 if __name__ == "__main__":

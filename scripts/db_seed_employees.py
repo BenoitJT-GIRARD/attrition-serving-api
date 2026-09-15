@@ -1,29 +1,31 @@
 """Load the ten committed request fixtures into `employees`, so `/predict_by_id` has rows.
 
-Ten, and not the full extract: the HR records describe real employees and are not in this
-repository.
+Ten rows, and not the whole extract: the dataset is not redistributed here, and ten rows
+in request shape are what a demonstration and the API tests need. `docs/data-source.md`
+says where the full extract comes from.
 """
 
 from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 
 import pandas as pd
 from sqlalchemy import text
 
 from attrition_serving.db.engine import get_engine
 from attrition_serving.env import load_env
+from attrition_serving.utils.paths import MODELS_DIR, TESTS_DIR
 
-EXPECTED_PATH = Path("models/expected_features.json")
-SAMPLE_PATH = Path("data/processed/api_test/X_test_sample.json")
+EXPECTED_PATH = MODELS_DIR / "expected_features.json"
+SAMPLE_PATH = TESTS_DIR / "fixtures" / "employees_sample.json"
 
 
 def main(reset: bool | None = None) -> None:
-    load_env()  # utilise ENV_FILE
+    load_env()  # ENV_FILE picks the deployment file
 
-    # reset par défaut : True si local, False sinon
+    # Wiping first is the local default, and never the remote one: re-seeding a shared
+    # database would delete rows somebody else is looking at.
     env_file = os.getenv("ENV_FILE", ".env.local")
     if reset is None:
         reset = env_file == ".env.local"
@@ -63,7 +65,7 @@ def main(reset: bool | None = None) -> None:
         conn.execute(stmt, payloads)
 
     print(
-        f"✅ Seed OK: {len(payloads)} employees inserted from {SAMPLE_PATH} "
+        f"[ok] {len(payloads)} employees seeded from {SAMPLE_PATH} "
         f"(ENV_FILE={env_file}, reset={reset})"
     )
 

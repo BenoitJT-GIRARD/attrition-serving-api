@@ -12,6 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
+from attrition_serving.config import SETTINGS
 from attrition_serving.preprocessing import FeatureGroups, build_preprocessor
 
 
@@ -25,9 +26,19 @@ def make_logreg(groups: FeatureGroups) -> Pipeline:
     pre = build_preprocessor(groups)
     clf = LogisticRegression(
         max_iter=500,
-        class_weight="balanced",  # important imbalance
-        solver="saga",  # supports l1/elasticnet too later
-        penalty="l2",
+        # 237 departures against 1,233 stays. Without this the model learns the majority
+        # class and the scores rank badly; with it they rank well and stop being
+        # probabilities, which is what the calibration arms are for.
+        class_weight="balanced",
+        solver="saga",
+        # Ridge, spelled the way scikit-learn 1.8 asks for it: `penalty="l2"` is deprecated
+        # in 1.8 and gone in 1.10, and a deprecation warning on every fit is a warning
+        # nobody reads by the third run.
+        l1_ratio=0.0,
+        # `saga` is stochastic. Without a seed the published threshold moved between two
+        # runs of the same script on the same data -- 0.508 and 0.545 at a cost ratio of
+        # one -- and every table in the repository was a draw nobody could reproduce.
+        random_state=SETTINGS.random_state,
     )
     return Pipeline([("preprocess", pre), ("model", clf)])
 
@@ -36,7 +47,7 @@ def make_random_forest(groups: FeatureGroups) -> Pipeline:
     pre = build_preprocessor(groups)
     clf = RandomForestClassifier(
         n_estimators=400,
-        random_state=42,
+        random_state=SETTINGS.random_state,
         class_weight="balanced",
         max_depth=None,
         n_jobs=-1,

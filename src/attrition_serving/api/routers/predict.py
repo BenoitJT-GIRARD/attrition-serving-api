@@ -15,6 +15,7 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from attrition_serving.api.deps import get_db, require_api_key
@@ -37,6 +38,23 @@ _INSERT_PRED = text("""
 """)
 
 
+def _log_decision(db: Session, **row) -> int | None:
+    """Write the decision, or say it was not written. Never raise.
+
+    The module docstring has always said the log is best-effort. It was not: the insert ran
+    unguarded, so a database that was down turned every `/predict` into a 500 -- the opposite
+    of what the documentation promised, and what the system tier found by starting the
+    service without one. `stored` in the response is how a caller learns the difference.
+    """
+    try:
+        written = db.execute(_INSERT_PRED, row).fetchone()
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return None
+    return int(written[0])
+
+
 @router.post("/predict", response_model=PredictResponse, dependencies=[Depends(require_api_key)])
 def predict(req: PredictRequest, db: Session = Depends(get_db)):
     cfg = get_config()
@@ -53,34 +71,30 @@ def predict(req: PredictRequest, db: Session = Depends(get_db)):
                 "message": "Incomplete payload or null values: every expected feature is required.",
                 "missing_features": missing,
                 "null_features": nulls,
-                "hint": "Utilise un record complet depuis data/processed/api_test/X_test_sample.json",
+                "hint": "Send a complete record; tests/fixtures/employees_sample.json holds ten.",
             },
         )
 
     proba = predict_proba(payload)
     pred = decide(proba)
 
-    input_json = json.dumps(payload, ensure_ascii=False)
-    row = db.execute(
-        _INSERT_PRED,
-        {
-            "employee_id": None,
-            "input_payload": input_json,
-            "proba": proba,
-            "pred": pred,
-            "thr": cfg.model_threshold,
-            "ver": cfg.model_version,
-        },
-    ).fetchone()
-    db.commit()
+    db_id = _log_decision(
+        db,
+        employee_id=None,
+        input_payload=json.dumps(payload, ensure_ascii=False),
+        proba=proba,
+        pred=pred,
+        thr=cfg.model_threshold,
+        ver=cfg.model_version,
+    )
 
     return PredictResponse(
         proba_depart=proba,
         prediction=pred,
         threshold=cfg.model_threshold,
         model_version=cfg.model_version,
-        stored=True,
-        db_id=int(row[0]),
+        stored=db_id is not None,
+        db_id=db_id,
     )
 
 
@@ -98,7 +112,7 @@ def predict_by_id(employee_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Employee not found")
 
     payload = row[0]
-    # selon driver/param, ça peut arriver en dict OU en string JSON
+    # JSONB comes back as a dict from psycopg and as a JSON string from some drivers.
     if isinstance(payload, str):
         payload = json.loads(payload)
 
@@ -120,27 +134,23 @@ def predict_by_id(employee_id: int, db: Session = Depends(get_db)):
     proba = predict_proba(payload)
     pred = decide(proba)
 
-    input_json = json.dumps(payload, ensure_ascii=False)
-    row2 = db.execute(
-        _INSERT_PRED,
-        {
-            "employee_id": employee_id,
-            "input_payload": input_json,
-            "proba": proba,
-            "pred": pred,
-            "thr": cfg.model_threshold,
-            "ver": cfg.model_version,
-        },
-    ).fetchone()
-    db.commit()
+    db_id = _log_decision(
+        db,
+        employee_id=employee_id,
+        input_payload=json.dumps(payload, ensure_ascii=False),
+        proba=proba,
+        pred=pred,
+        thr=cfg.model_threshold,
+        ver=cfg.model_version,
+    )
 
     return PredictResponse(
         proba_depart=proba,
         prediction=pred,
         threshold=cfg.model_threshold,
         model_version=cfg.model_version,
-        stored=True,
-        db_id=int(row2[0]),
+        stored=db_id is not None,
+        db_id=db_id,
     )
 
 

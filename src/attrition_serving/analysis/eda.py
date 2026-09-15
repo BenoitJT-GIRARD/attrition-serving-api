@@ -83,7 +83,7 @@ def plot_numeric_by_target(df: pd.DataFrame, col: str, target: str) -> None:
     require_columns(df, [col, target])
     plt.figure()
     sns.boxplot(data=df, x=target, y=col)
-    plt.title(f"{col} selon {target}")
+    plt.title(f"{col} by {target}")
     plt.tight_layout()
 
 

@@ -43,6 +43,9 @@ dev = [
     # than no lint.
     "ruff>=0.16.6",
     "httpx>=0.28.1",
+    # scripts/capture.py drives Swagger through a real browser: the response panel only
+    # exists after the request has run, and Chrome's virtual clock does not wait for it.
+    "playwright>=1.47.0",
 ]
 mlops = [
     "mlflow>=3.7.0",
@@ -75,22 +78,41 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header"]
 quote-style = "double"
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+minversion = "8.0"
 testpaths = ["tests"]
-pythonpath = ["src"]
+#  is on the path so the unit tier can import a script and test the function it
+# holds, instead of shelling out to it and asserting on printed text.
+pythonpath = ["src", "scripts"]
+addopts = "-ra --strict-markers --cov --cov-branch --cov-report=term-missing --cov-report=xml:reports/coverage/coverage.xml"
 markers = [
-    "integration: needs a reachable PostgreSQL; skipped when DATABASE_URL points nowhere",
+    "integration: two real components of the repository wired together, or one against a real external dependency",
+    "system: the product started the way the README says to start it, questioned through its public surface",
+    "claim: fails when a published number, figure, table or artefact stops matching the code",
+    "simulation: replays a complete scenario on frozen data, with no real service",
+    "slow: takes long enough that a reader deserves to be told before running it",
 ]
 # Warnings are errors. The suite had no filter at all, so nothing a dependency
 # deprecated would ever have failed a run.
 filterwarnings = ["error"]
 
 [tool.coverage.run]
-source = ["src/attrition_serving"]
+source = ["src/attrition_serving", "scripts"]
 branch = true
+data_file = "var/.coverage"
+# The figure style is a copied-in module, tested at its source: counting it here would
+# measure someone else's tests.
+omit = [
+    # Copied-in modules, tested at their source: counting them here would measure someone
+    # else's tests.
+    "*/figure_style.py",
+    "scripts/capture.py",
+]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
+# The floor is the rate measured the day the suite was completed, rounded down. A floor
+# below the current rate is not a floor: it lets the next commit lose coverage in silence.
+fail_under = 54
 
 # The CI calls `bandit -c pyproject.toml`, which without this section silently falls back to
 # defaults -- including flagging every `assert` in the test suite the day someone points it

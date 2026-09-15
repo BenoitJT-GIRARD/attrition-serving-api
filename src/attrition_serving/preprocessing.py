@@ -41,7 +41,7 @@ class FeatureGroups:
     # Ordinal categoricals: encoded with their order declared, because the order is
     # information and one-hot would throw it away.
     cat_ord: list[str]
-    ord_categories: list[list]  # même longueur que cat_ord
+    ord_categories: list[list]  # one list of categories per column of cat_ord
 
 
 def _log1p_safe(X):
@@ -136,7 +136,7 @@ def make_feature_groups(df: pd.DataFrame, target: str) -> FeatureGroups:
     X = df.drop(columns=[target])
     X_cols = set(X.columns)
 
-    # === Numériques continues ===
+    # --- Continuous ---
     num_cont = [
         "age",
         "augmentation_salaire_precedente",
@@ -146,7 +146,7 @@ def make_feature_groups(df: pd.DataFrame, target: str) -> FeatureGroups:
         "ratio_experience_vie_adulte",
     ]
 
-    # === Numériques à log-transform ===
+    # --- Continuous, log-transformed: heavy right tails ---
     num_log = [
         "revenu_mensuel",
         "annee_experience_totale",
@@ -156,22 +156,22 @@ def make_feature_groups(df: pd.DataFrame, target: str) -> FeatureGroups:
         "annees_depuis_la_derniere_promotion",
     ]
 
-    # === Numériques discrètes ===
+    # --- Counts ---
     num_disc = [
         "nombre_participation_pee",
         "nb_formations_suivies",
         "nombre_employee_sous_responsabilite",
         "nombre_experiences_precedentes",
-        "nombre_experiences_precedents",  # tolère l'ancienne colonne si présente
+        "nombre_experiences_precedents",  # the older spelling, accepted when present
     ]
 
-    # === Binaires ===
+    # --- Binary ---
     bin_cols = ["genre", "heure_supplementaires", "changement_poste"]
 
-    # === Catégorielles nominales ===
+    # --- Nominal categories ---
     cat_nom = ["statut_marital", "departement", "poste", "domaine_etude"]
 
-    # === Ordinales ===
+    # --- Ordered categories ---
     cat_ord = [
         "satisfaction_employee_environnement",
         "satisfaction_employee_nature_travail",
@@ -196,7 +196,8 @@ def make_feature_groups(df: pd.DataFrame, target: str) -> FeatureGroups:
 
     # Ordinal order: the sorted unique values. That is right for the numeric-coded
     # satisfaction scales here and would not be for a free-text category.
-    # (tu pourras mettre un ordre métier explicite plus tard si besoin)
+    # The order is the numeric one the survey used. A business order would have to
+    # come from the survey's own scale, and this dataset does not publish one.
     ord_categories = [sorted(df[c].dropna().unique().tolist()) for c in cat_ord]
 
     return FeatureGroups(

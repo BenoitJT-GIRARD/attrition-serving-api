@@ -16,7 +16,7 @@ def main() -> None:
         n_emp = conn.execute(text("SELECT COUNT(*) FROM employees")).scalar_one()
         n_pred = conn.execute(text("SELECT COUNT(*) FROM predictions")).scalar_one()
 
-    print("✅ DB smoke test")
+    print("[ok] database smoke test")
     print("employees:", n_emp)
     print("predictions:", n_pred)
 

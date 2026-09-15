@@ -11,19 +11,14 @@ wheels/
 # Virtual environments
 .venv
 
-# Data
+# The extracts, and everything derived from them. docs/data-source.md says what they are and
+# how to put them back. The CONTENTS are ignored and not the directory: a root directory that
+# git never sees is a root directory a reader never sees either.
 data/raw/*
-!data/raw/.gitkeep
 data/processed/*
-!data/processed/.gitkeep
-!data/processed/api_test/
-data/processed/api_test/*
-!data/processed/api_test/*_sample.json
 
 # MLflow / artifacts
 mlruns/
-models/*.joblib
-!models/pipeline.joblib
 artifacts/
 
 # Notebooks checkpoints
@@ -35,9 +30,8 @@ artifacts/
 .env.supabase
 .env.docker
 
-# Coverage reports
+# Coverage reports. reports/coverage/coverage.xml IS published: the badge recomputes from it.
+var/
 .coverage
 htmlcov/
 reports/coverage_html/
-# Written by the coverage step into a directory whose other files are published artefacts.
-reports/coverage.xml

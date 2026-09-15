@@ -1,0 +1,65 @@
+{
+  "schema": "image-manifest/1",
+  "images": {
+    "api-docs.png": {
+      "sha256": "4d7b80db43e526176e30fe556de18541808e1b83bbedac988f40bc2c2a7a9d51",
+      "written": "2026-09-15",
+      "source": "scripts/capture.py",
+      "command": "uv run python scripts/capture.py --only api-docs",
+      "target": "http://127.0.0.1:8000/docs",
+      "viewport": [
+        1280,
+        1000
+      ],
+      "device_scale_factor": 2,
+      "app_state": "the service started from the committed model card, against the PostgreSQL that `docker compose up -d` brings up, with the ten request fixtures seeded and no prediction made yet",
+      "data_source": "none: the page is generated from the Pydantic models",
+      "demonstrates_behaviour": "the five routes and the API-key scheme are generated from the Pydantic models, so the page a caller reads cannot drift from the contract the service enforces",
+      "git_revision": "ee2feef456d35721ca3bf94f178705155e391380",
+      "depends_on": [
+        "src/attrition_serving/api/main.py",
+        "src/attrition_serving/api/schemas.py"
+      ]
+    },
+    "decision-history.png": {
+      "sha256": "972e280c301fedf31cc1b9e495b5257ab1cc40819cd01e819db0833a8798716f",
+      "written": "2026-09-15",
+      "source": "scripts/capture.py",
+      "command": "uv run python scripts/capture.py --only decision-history",
+      "target": "http://127.0.0.1:8000/docs#/prediction/history_by_id_history__employee_id__get",
+      "viewport": [
+        1280,
+        1000
+      ],
+      "device_scale_factor": 2,
+      "app_state": "the same service after the prediction above, so the decision log holds at least one row for employee 1",
+      "data_source": "the decision log this service wrote in the capture above",
+      "demonstrates_behaviour": "GET /history/1 returns what was decided for that employee and when, each row carrying its own threshold and model version: a past decision can be explained without guessing which model made it",
+      "git_revision": "ee2feef456d35721ca3bf94f178705155e391380",
+      "paired_with": "prediction-logged.png",
+      "depends_on": [
+        "src/attrition_serving/api/routers/predict.py"
+      ]
+    },
+    "prediction-logged.png": {
+      "sha256": "5b389b2ca5fe78fa51880ad80d6dcdb7c0512b0ca542f3a1f81b404739aea4dc",
+      "written": "2026-09-15",
+      "source": "scripts/capture.py",
+      "command": "uv run python scripts/capture.py --only prediction-logged",
+      "target": "http://127.0.0.1:8000/docs#/prediction/predict_by_id_predict_by_id__employee_id__post",
+      "viewport": [
+        1280,
+        1000
+      ],
+      "device_scale_factor": 2,
+      "app_state": "the same service, authorised in the Swagger dialog with a throwaway key, then POST /predict_by_id/1 executed from the documentation page against employee 1 of the seeded fixtures",
+      "data_source": "one of the ten fictional rows under tests/fixtures/, seeded into the employees table by scripts/db_seed_employees.py",
+      "demonstrates_behaviour": "the answer carries the threshold that turned the probability into a decision, the version of the model that produced it, and `stored: true` with the row id the decision was written to -- which is the claim this repository exists to make",
+      "git_revision": "ee2feef456d35721ca3bf94f178705155e391380",
+      "depends_on": [
+        "src/attrition_serving/api/routers/predict.py",
+        "models/model_card.json"
+      ]
+    }
+  }
+}
