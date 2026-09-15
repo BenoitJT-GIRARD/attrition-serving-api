@@ -70,10 +70,10 @@ the threshold the service must read.
 exploratory runs. Neither is on the serving path, and the image installs neither: what is
 served is one frozen artefact and the code that reads it.
 
-Around the code, **uv** for a locked environment, **Ruff** and **Bandit** on every push, and
-**pytest** in three tiers whose system tier starts the service in its own process and scores a
-hundred payloads over HTTP. **Docker** builds the image, and a **GitHub Actions** pipeline runs
-the integration tier against a real database instead of skipping it.
+The tooling around it: **uv** locks the environment, **Ruff** and **Bandit** gate every push,
+and **pytest** is split by tier — the last of which boots the service as its own process and
+sends it a hundred payloads over HTTP. **Docker** builds the image, and the **GitHub Actions**
+pipeline stands a real database up so the middle tier runs instead of skipping.
 
 ## The result
 
@@ -179,7 +179,7 @@ uv run python scripts/run_evaluation.py        # 3 arms x 25 folds, cost curve, 
 uv run python scripts/train_export_pipeline.py # the artefact and its card
 ```
 
-Tests: `uv run pytest` — three tiers, coverage measured on every run with a floor.
+Tests: `uv run pytest`. The coverage floor is checked on every run and never lowered.
 [`docs/architecture.md`](docs/architecture.md) says what each tier guarantees, and what else
 was decided before it.
 

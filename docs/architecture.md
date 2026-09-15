@@ -1,8 +1,9 @@
 # Engineering decisions, and what was deliberately left out
 
-Only the choices that could have gone the other way are here. The evaluation protocol is in
-[`protocol.md`](protocol.md), the data in [`data-source.md`](data-source.md), and everything
-about running the service in [`operations.md`](operations.md).
+What follows is the short list of decisions that had a defensible alternative. The evaluation
+protocol is in [`protocol.md`](protocol.md), the data in
+[`data-source.md`](data-source.md), and everything about running the service in
+[`operations.md`](operations.md).
 
 ## Where the code lives
 
