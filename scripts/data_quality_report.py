@@ -11,8 +11,13 @@ notebook cells or not at all:
 - **how the categoricals are encoded** — which are nominal, which are ordinal, and in what
   order.
 
-Writes `reports/data_quality.csv`, `reports/cleaning_trace.csv` and
-`reports/feature_encoding.csv`.
+Writes `reports/data_quality.csv`, `reports/cleaning_trace.csv`,
+`reports/redundant_features.csv`, `reports/feature_encoding.csv` and
+`reports/univariate_tests.csv`.
+
+The univariate tests moved here from a notebook. Nothing under `reports/` comes out of a
+notebook: a published table has to be rebuilt by one command, and a notebook is rebuilt by a
+person clicking Run All.
 """
 
 from __future__ import annotations
@@ -21,6 +26,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from attrition_serving.analysis.stats_tests import compare_groups_univariate
 from attrition_serving.config import PATHS
 from attrition_serving.preprocessing import make_feature_groups
 
@@ -165,6 +171,18 @@ def main() -> None:
     encoding = encoding_table(featured)
     encoding.to_csv(PATHS.reports / "feature_encoding.csv", index=False)
 
+    # Which columns separate leavers from stayers on their own, before any model is fitted.
+    # The test is chosen per column -- Welch when both groups pass a normality test, Mann-
+    # Whitney otherwise -- and the p-values carry a Benjamini-Hochberg correction, because
+    # thirty columns compared without one hand back a significant result by chance.
+    numeric = [
+        column
+        for column in featured.columns
+        if column != TARGET and pd.api.types.is_numeric_dtype(featured[column])
+    ]
+    univariate = compare_groups_univariate(featured, target=TARGET, cols=numeric)
+    univariate.to_csv(PATHS.reports / "univariate_tests.csv", index=False)
+
     print(f"{len(featured):,} rows, {featured.shape[1]} columns")
     print(
         f"  target {TARGET}: {int(featured[TARGET].sum())} departures "
@@ -176,11 +194,14 @@ def main() -> None:
         f"  categoricals: {int((encoding['kind'] == 'nominal').sum())} nominal, "
         f"{int((encoding['kind'] == 'ordinal').sum())} ordinal"
     )
+    significant = int((univariate["p_value_fdr"] < 0.05).sum()) if not univariate.empty else 0
+    print(f"  columns separating the two groups after correction: {significant}")
     for name in (
         "data_quality.csv",
         "cleaning_trace.csv",
         "redundant_features.csv",
         "feature_encoding.csv",
+        "univariate_tests.csv",
     ):
         print(f"  [ok] reports/{name}")
 

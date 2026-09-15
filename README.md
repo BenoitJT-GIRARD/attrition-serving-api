@@ -9,9 +9,9 @@
   <img src="docs/badges/coverage.svg" alt="coverage 56%">
 </p>
 
-**Project status** — finished, and archived in a runnable state. It is an MLOps repository
-before it is a modelling one: the model is small and the machinery around it — the frozen
-artefact, the decision log, the pipeline — is the subject. The hosted deployment and the
+**Project status** — finished, and archived in a runnable state. Churn prediction is the
+problem; MLOps is the subject. The model is small, and what is worth reading is the machinery
+around it: the frozen artefact, the decision log, the pipeline that keeps them honest. The hosted deployment and the
 managed database it wrote to are both gone; `docker compose up` brings the local equivalent
 back in one command. Continuous integration runs on push and on pull requests, against a real
 PostgreSQL service container.
