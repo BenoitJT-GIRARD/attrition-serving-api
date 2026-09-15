@@ -38,9 +38,8 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "python-dotenv>=1.2.1",
-    # Pinned: 0.14 and 0.16 disagree on
-    # thirty-seven findings, and a lint that passes locally and fails in review is worse
-    # than no lint.
+    # Pinned: 0.14 and 0.16 disagree on thirty-seven findings, and a lint that passes on
+    # one machine and fails on the next is worse than no lint at all.
     "ruff>=0.16.6",
     "httpx>=0.28.1",
     # scripts/capture.py drives Swagger through a real browser: the response panel only
@@ -96,14 +95,20 @@ markers = [
 filterwarnings = ["error"]
 
 [tool.coverage.run]
+# Without this, the published XML report writes the absolute root of the measured sources:
+# a reader finds the directory tree of the machine that ran the suite, and two runs on two
+# machines produce two different files for the same numbers.
+relative_files = true
 source = ["src/attrition_serving", "scripts"]
 branch = true
 data_file = "var/.coverage"
-# The figure style is a copied-in module, tested at its source: counting it here would
-# measure someone else's tests.
+# The figure style is copied in rather than imported, so a clone needs nothing beyond
+# matplotlib, and it is tested at its source. Measuring it here would report someone
+# else's coverage as this project's.
 omit = [
-    # Copied-in modules, tested at their source: counting them here would measure someone
-    # else's tests.
+    # Copied in rather than imported, so a clone needs nothing extra to install, and tested
+    # at their source. Measuring them here would report someone else's coverage as this
+    # project's.
     "*/figure_style.py",
     "scripts/capture.py",
     "scripts/smoke.py",

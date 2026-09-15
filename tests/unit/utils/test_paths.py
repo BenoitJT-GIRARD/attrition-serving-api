@@ -72,3 +72,15 @@ def test_only_the_directories_a_run_writes_into_are_created(monkeypatch, tmp_pat
 )
 def test_the_nested_directories_sit_where_the_vocabulary_says(name, expected) -> None:
     assert getattr(paths, name).parent.name == expected
+
+
+def test_a_logged_path_starts_at_the_project_root() -> None:
+    """A log naming a home directory tells the reader where the run happened, and no more."""
+    assert paths.rel(paths.REPORTS_DIR / "figures" / "roc.png") == "reports/figures/roc.png"
+
+
+def test_a_file_kept_outside_the_tree_stays_absolute(tmp_path) -> None:
+    """There is no relative form for a file that does not live under the project."""
+    elsewhere = tmp_path / "export.csv"
+
+    assert paths.rel(elsewhere) == elsewhere.resolve().as_posix()

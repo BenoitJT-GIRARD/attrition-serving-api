@@ -8,7 +8,7 @@ by repeated cross-validation, and this one reads its summary to learn which cali
 and which threshold were chosen. Splitting them is what stops a number from being produced
 by the same pass that selects it.
 
-Two things changed here after the audit.
+Two things about the fit are worth stating, because neither is the obvious choice.
 
 **The model is calibrated.** `class_weight="balanced"` makes the raw scores rank well and
 lie: mean predicted 0.375 against a base rate of 0.161. The service returns that number as
