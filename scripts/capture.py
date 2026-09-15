@@ -7,9 +7,10 @@ happened to the application, where the displayed data came from. This script tak
 and writes that sentence into ``docs/images/MANIFEST.json`` in the same gesture, because a
 manifest filled in afterwards is filled in from memory.
 
-The repository fills in :data:`CAPTURES` and nothing else. Each entry says what the image must
-*prove*: « the API answers a prediction » names a surface, « a request with a missing feature
-is refused with the field named » names a behaviour.
+The repository fills in :data:`CAPTURES` and :func:`prepare`, and nothing else. Each entry says
+what the image must *prove*: « the API answers a prediction » names a surface, « a request with
+a missing feature is refused with the field named » names a behaviour; :func:`prepare` holds the
+commands that put the product into the state being photographed.
 
     uv run python scripts/capture.py                 # every capture
     uv run python scripts/capture.py --only api-docs
@@ -82,10 +83,21 @@ class Capture:
     #: shown alone reads as a failure; shown next to the nominal answer it reads as a design.
     paired_with: str | None = None
     depends_on: tuple[str, ...] = ()
+    #: A surface of this repository that is NOT the one ``SERVE_COMMAND`` starts — an
+    #: orchestrator's web interface, a database console, a second service of the same
+    #: compose file. ``served_by`` is the command a reader runs to bring it up, and the
+    #: capture is skipped, loudly, when nothing answers there: a picture is worth taking
+    #: only of something that is running.
+    base_url: str | None = None
+    served_by: str | None = None
 
     @property
     def target(self) -> str:
-        return f"{BASE_URL}{self.route}"
+        return f"{self.base_url or BASE_URL}{self.route}"
+
+    @property
+    def is_second_surface(self) -> bool:
+        return self.base_url is not None
 
     @property
     def path(self) -> Path:
@@ -205,6 +217,17 @@ CAPTURES: tuple[Capture, ...] = (
         depends_on=("src/attrition_serving/api/routers/predict.py",),
     ),
 )
+
+
+def prepare() -> None:
+    """Put the product into the state the captures need, before it is started.
+
+    A picture of an empty product proves nothing, and a state built by hand in a terminal is
+    a state nobody can reproduce. Whatever a capture depends on — a seeded database, a built
+    index, a run of the pipeline — is commanded here, so that the image and the state behind
+    it are written down in the same file. The default does nothing: a product that serves
+    committed artefacts is already in the state it is photographed in.
+    """
 
 
 # --- Starting the product, and knowing when it is up ------------------------
@@ -463,10 +486,18 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if stale else 0
 
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    prepare()
     entries: dict[str, dict] = {}
     health = f"{BASE_URL}{HEALTH_ROUTE}" if HEALTH_ROUTE else None
     with Serving(SERVE_COMMAND, health):
         for capture in wanted:
+            if capture.is_second_surface and not _answers(capture.target):
+                print(
+                    f"{capture.name:24} skipped: nothing answers {capture.target}. "
+                    f"Start it with: {capture.served_by}",
+                    file=sys.stderr,
+                )
+                continue
             ENGINES[capture.engine](capture)
             entries[capture.path.name] = record(capture)
             print(f"{capture.name:24} {capture.path.relative_to(ROOT_DIR)}")
