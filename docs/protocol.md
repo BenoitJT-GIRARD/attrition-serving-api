@@ -8,10 +8,10 @@ corrections it forced were worth in numbers.
 
 ## What a run does
 
-`uv run python scripts/run_evaluation.py` — a few minutes, no GPU. It scores the 1 470 rows
-under a 5×5 repeated stratified cross-validation: five folds, five different splitting seeds,
-so every employee is scored five times by a model that never saw them in training. That is
-7 350 scored rows and 1 185 departures across the 25 folds.
+`uv run python scripts/run_evaluation.py` — a few minutes, no GPU. Stratified five-fold
+cross-validation, repeated under five splitting seeds, over the whole table: each of the 1 470
+employees is therefore scored five separate times, always by a model fitted without them. The
+totals are 7 350 scored rows and 1 185 departures.
 
 Inside each fold, in this order:
 
@@ -21,14 +21,15 @@ Inside each fold, in this order:
 4. the **threshold** is read off the inner validation split;
 5. the scoring fold is scored once, with that threshold, and never looked at again.
 
-The scoring fold takes part in no decision — not the threshold, not the recalibration, not
-the subgroup cut points. That sentence is the whole protocol; the rest is bookkeeping.
+No decision is taken with the scoring fold in view: the threshold, the recalibration and the
+subgroup boundaries are all settled before it is opened. Everything else in this module is
+bookkeeping around that one rule.
 
 ## The three arms
 
-The service returns a number called `proba_depart` and writes it to a database column of the
-same name, so it has to be a probability. `class_weight="balanced"` makes the scores rank well
-and lie, so three arms are run and compared.
+`class_weight="balanced"` buys a good ranking and pays for it with the scale: the scores come
+out inflated towards the positive class. Since the service publishes them under a name that
+promises a probability, three arms are run and the trade between them is measured.
 
 <!-- source: ../reports/evaluation_summary.json -->
 | arm | what it does | average precision | roc auc | calibration error | mean predicted risk | n |
@@ -40,19 +41,19 @@ and lie, so three arms are run and compared.
 n = 7 350 scored rows, 1 185 departures, over 25 folds. `±` is the standard deviation between
 folds. The base rate is 0.161.
 
-Recalibration costs average precision, 0.607 down to 0.569. A comment in this repository once
-claimed it could not, on the grounds that a monotone transform reorders nothing. That was
-wrong: isotonic regression is a *step* function, it maps distinct scores onto one value, and
-ties are exactly what average precision penalises. ROC AUC barely moves — 0.823 to 0.820 —
-which is how one can see the ordering survived. Fitting the calibrator across the whole
-training fold instead of one held-out split recovers a third of the loss, and that is why the
-shipped arm is `crossfit` and not `holdout`.
+The 0.038 of average precision lost between the first row and the third is real, and a comment
+in this repository once argued it was impossible because a monotone map preserves order. The
+argument fails on one word: isotonic regression is a *step*, so distinct scores collapse onto a
+shared value, and average precision charges for every tie thus created. ROC AUC moves by 0.003,
+which is the signature of an ordering left intact. Cross-fitting the calibrator over the whole
+training fold rather than one quarter of it returns about a third of the loss, and the shipped
+arm is the one that does.
 
 ## The threshold is a cost decision
 
-A model ranks. It does not say where a retention conversation starts. That line depends on
-what a departure costs compared to an hour spent on a conversation nobody needed, and the
-protocol reports the whole curve instead of picking for the reader.
+Ranking is one thing and deciding is another. Where the alert list stops depends on a price the
+model has no access to: what losing somebody costs, against an hour of a manager's time spent on
+somebody who was staying anyway. The protocol prices the whole range.
 
 <!-- source: ../reports/cost_curve.csv -->
 | a missed departure is worth… | threshold | alert rate | recall | precision |
@@ -68,10 +69,9 @@ protocol reports the whole curve instead of picking for the reader.
 n = 7 350, so every share above is a share of 7 350 scored rows over 25 folds.
 `reports/cost_curve.csv` carries the eight ratios with the fold-to-fold spread of each.
 
-Eight is an assumption, not a measurement, and it is the one number here an employer would
-replace with their own. Past a ratio of about 13 the list stops being a list: the service
-flags one employee in two, and the last row of the table is a model that flags everybody and
-has stopped deciding anything.
+The ratio is the reader's to set. Past about 13 the alert list covers one employee in two, and
+the last row is a model that flags everybody: the curve has left the range where a retention
+programme can act on it.
 
 ## What each published name means
 
@@ -107,13 +107,13 @@ The same model, at the shipped threshold, by attribute.
 | department | R&D | 4 805 | 0.138 | 32 % | 75 % |
 | department | HR | 315 | 0.190 | 46 % | 82 % |
 
-Each group is flagged at roughly twice its own departure rate — the ratio sits between 2.0 and
-2.6 across all eight — so no group is over-flagged relative to how often it actually leaves.
+The ratio of alert rate to base rate stays between 2.0 and 2.6 across the eight rows, so the
+list tracks where departures actually happen.
 
-The last column is not so even. The model finds 86 % of departures among single employees and
-63 % among married ones. No correction is applied and no fairness claim is made. The HR group
-holds 315 scored rows, which is 63 employees scored five times: its 82 % rests on about twelve
-departures, and a difference of one employee moves it by eight points.
+Recall does not. Twenty-three points separate the two extreme marital statuses, which on a
+retention programme means one group is served better than another for reasons the model was
+never asked about. The HR row rests on about twelve events out of 315 scored rows: one employee
+moves it by eight points, and it should be read as a count rather than as a rate.
 
 `reports/subgroups.csv` carries the same table, with the same labels: the translation from
 the extracts' French happens in `protocol.py`, so the CSV a reader opens to check this page
@@ -130,12 +130,10 @@ says what this page says.
 
 n = 7 350 scored rows over 25 folds, same protocol for all three.
 
-The forest does not beat the linear model on 1 470 rows and 32 features, and its interval
-overlaps. The linear model can be read coefficient by coefficient, which on a decision that
-sends a manager to talk to a named person is a requirement.
-
-No hyper-parameter search and no gradient boosting appear anywhere. With a fold-to-fold spread
-of 0.058 on average precision, no comparison finer than that is readable on this dataset.
+The forest loses by 0.076 of average precision with overlapping intervals, so the comparison
+settles nothing about the families and everything about the size of the dataset. The linear
+model is kept for a reason the score does not carry: a manager sent to talk to a named person
+can be shown the coefficients that produced the alert.
 
 ## The six things that were wrong
 
@@ -168,9 +166,10 @@ Bootstrapped over 2 000 resamples, average precision on that set spans [0.355, 0
 recall spans [0.667, 0.962]. "Recall = 0.80" was indistinguishable from 0.70 and from 0.95,
 and the repository published four decimals on it.
 
-Cross-validation over all 1 470 rows replaced it, and the comparison runs the opposite way
-from what one would expect. The published split gave 0.546 average precision, **above only
-16 % of the folds**. The repository was under-reporting its own model.
+<!-- source: ../reports/evaluation_summary.json -->
+Twenty-five folds over the full n = 1 470 rows replaced it, and the correction went the
+direction nobody expects: the old split's 0.546 sits **below 0.84 of the folds**. The
+repository had been quoting one of its unluckiest draws.
 
 **Three files gave three different numbers**, and one of them was produced by no code in the
 repository at all. It is deleted. `scripts/run_evaluation.py` writes every published table
@@ -180,27 +179,14 @@ now, and `models/model_card.json` cites it.
 observed departure rate was 0.17. The three arms above are what replaced the single number.
 
 **The API required five fields it never read.** The feature contract was built from every
-column of the training frame, so a caller had to send the anonymised employee id and both join
-keys to get a prediction — all three dropped before the model saw them. One of the five was
+column of the training frame. A caller therefore had to supply the anonymised identifier and
+the two join keys, none of which reach the model. One of the five was
 the previous pay rise, which the service carefully normalised on the way in. Parsed and added
 back as a feature, average precision goes from 0.608 to 0.604 against a fold spread of 0.056:
 it changes nothing, and the contract was the defect.
 
 ## What this does not prove
 
-<!-- source: ../reports/evaluation_summary.json -->
-**n = 1 470 rows at a base rate of 0.161 is a small dataset.** Cross-validation narrows the
-intervals; it does not create information.
-
-**The cost ratio is an assumption.** The shipped threshold is exactly as defensible as the
-ratio of eight that produced it.
-
-**Nothing here establishes cause.** A variable that separates leavers from stayers can be a
-symptom of the decision to leave: someone who has decided to go stops asking for training. A
-cross-section cannot tell the two apart. The model ranks risk; it names no lever to pull.
-
-**The subgroup table describes, it does not guarantee.** It shows a recall gap between married
-and single employees, establishes nothing about why, and corrects nothing.
-
-**No drift monitoring.** A model served without it would have to be re-evaluated on new data
-before being trusted a year from now. `docs/operations.md` says which signal would be watched.
+The five limits this protocol cannot lift are in the README, under that heading. They are limits
+of the data and of the design, not of the measurement, which is why they are stated where a
+reader meets the numbers rather than here.

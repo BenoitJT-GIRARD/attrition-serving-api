@@ -22,8 +22,8 @@ Those three constants are the fingerprint. IBM's file carries `StandardHours` = 
 `Y` and `EmployeeCount` = 1 for every one of its 1 470 rows, and nothing else in the public
 HR-dataset landscape carries that trio at that row count.
 
-`uv run python scripts/build_extracts.py --check` replays the whole signature — every range,
-every value count in the table below — against whatever sits in `data/raw/`, and names the
+`uv run python scripts/build_extracts.py --check` replays the whole signature, every range and
+every value count in the table below, against whatever sits in `data/raw/`, and names the
 column that disagrees. Run it before quoting a number.
 
 ## Why the columns are in French
@@ -65,12 +65,12 @@ replay it.
 
 | Extract | IBM | Values |
 |---|---|---|
-| `satisfaction_employee_environnement` | `EnvironmentSatisfaction` | 1 to 4 — 284 / 287 / 453 / 446 |
-| `note_evaluation_precedente` | `JobInvolvement` | 1 to 4 — 83 / 375 / 868 / 144 |
-| `niveau_hierarchique_poste` | `JobLevel` | 1 to 5 — 543 / 534 / 218 / 106 / 69 |
-| `satisfaction_employee_nature_travail` | `JobSatisfaction` | 1 to 4 — 289 / 280 / 442 / 459 |
-| `satisfaction_employee_equipe` | `RelationshipSatisfaction` | 1 to 4 — 276 / 303 / 459 / 432 |
-| `satisfaction_employee_equilibre_pro_perso` | `WorkLifeBalance` | 1 to 4 — 80 / 344 / 893 / 153 |
+| `satisfaction_employee_environnement` | `EnvironmentSatisfaction` | 1 to 4, counts 284 / 287 / 453 / 446 |
+| `note_evaluation_precedente` | `JobInvolvement` | 1 to 4, counts 83 / 375 / 868 / 144 |
+| `niveau_hierarchique_poste` | `JobLevel` | 1 to 5, counts 543 / 534 / 218 / 106 / 69 |
+| `satisfaction_employee_nature_travail` | `JobSatisfaction` | 1 to 4, counts 289 / 280 / 442 / 459 |
+| `satisfaction_employee_equipe` | `RelationshipSatisfaction` | 1 to 4, counts 276 / 303 / 459 / 432 |
+| `satisfaction_employee_equilibre_pro_perso` | `WorkLifeBalance` | 1 to 4, counts 80 / 344 / 893 / 153 |
 | `eval_number` | `EmployeeNumber` | rendered `E_<number>` |
 | `note_evaluation_actuelle` | `PerformanceRating` | 3 (1 244) or 4 (226) |
 | `heure_supplementaires` | `OverTime` | Oui ← Yes (416), Non ← No (1 054) |
@@ -85,12 +85,12 @@ ones (83 / 375 / 868 / 144 and 80 / 344 / 893 / 153); the three satisfaction sca
 | Extract | IBM | Values |
 |---|---|---|
 | `a_quitte_l_entreprise` | `Attrition` | Oui ← Yes (237), Non ← No (1 233) |
-| `nombre_participation_pee` | `StockOptionLevel` | 0 to 3 — 631 / 596 / 158 / 85 |
-| `nb_formations_suivies` | `TrainingTimesLastYear` | 0 to 6 — 54 / 71 / 547 / 491 / 123 / 119 / 65 |
+| `nombre_participation_pee` | `StockOptionLevel` | 0 to 3, counts 631 / 596 / 158 / 85 |
+| `nb_formations_suivies` | `TrainingTimesLastYear` | 0 to 6, counts 54 / 71 / 547 / 491 / 123 / 119 / 65 |
 | `nombre_employee_sous_responsabilite` | `EmployeeCount` | constant 1 |
 | `code_sondage` | `EmployeeNumber` | zero-padded to six digits |
 | `distance_domicile_travail` | `DistanceFromHome` | 1 to 29 |
-| `niveau_education` | `Education` | 1 to 5 — 170 / 282 / 572 / 398 / 48 |
+| `niveau_education` | `Education` | 1 to 5, counts 170 / 282 / 572 / 398 / 48 |
 | `domaine_etude` | `EducationField` | six fields, re-themed; counts in `source.py` |
 | `ayant_enfants` | `Over18` | constant `Y` |
 | `frequence_deplacement` | `BusinessTravel` | Aucun ← Non-Travel (150), Occasionnel ← Travel_Rarely (1 043), Frequent ← Travel_Frequently (277) |
@@ -115,8 +115,8 @@ on what it wrote. From there `scripts/run_evaluation.py` reproduces every publis
 
 ## What is done to it afterwards
 
-The three files are joined on the employee — `id_employee`, `eval_number` and `code_sondage`
-are the same number in three spellings — and the identifier is then replaced by an HMAC-SHA256
+The three files are joined on the employee: `id_employee`, `eval_number` and `code_sondage`
+are the same number in three spellings. The identifier is then replaced by an HMAC-SHA256
 digest keyed from the environment.
 
 That anonymisation is a **demonstration, not a protection**: the rows are fictional, so there

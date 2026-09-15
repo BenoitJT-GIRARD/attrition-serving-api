@@ -1,8 +1,7 @@
 """The threshold the service decides on, against the threshold the artefact declares.
 
 This is the test the repository did not have. `api/settings.py` looked up
-`model_card["threshold_default"]`; the export script writes `default_threshold`. The lookup
-missed every time and the threshold fell back to 0.5, while every published figure said
+the card under one key while the export wrote another. The lookup missed on every request and the threshold fell back to 0.5, while every published figure said
 0.32. On the test set that is recall 0.625 served against 0.833 documented — nine leavers
 missed out of twenty-four instead of four.
 
@@ -73,9 +72,9 @@ def test_the_shipped_artifact_loads_and_predicts() -> None:
 
 
 def test_the_card_records_the_library_that_wrote_the_artifact(model_card: dict) -> None:
-    """A scikit-learn pickle is only readable by a compatible scikit-learn.
+    """A pickle and the library that wrote it travel together.
 
-    Versioning the artefact without versioning what reads it is versioning a file, not a
+    An artefact whose library version is unrecorded is a file, and not a
     model.
     """
     import sklearn
@@ -89,7 +88,7 @@ def test_the_card_records_the_library_that_wrote_the_artifact(model_card: dict) 
 
 
 def test_the_decision_is_the_comparison_it_claims_to_be(config, model_card) -> None:
-    """`decide` is one line, and it is the line the whole service exists to run."""
+    """`decide` is the comparison the whole service exists to make."""
     from attrition_serving.api.service import decide
 
     threshold = model_card["default_threshold"]

@@ -52,7 +52,7 @@ def get_config() -> AppConfig:
     # writes `default_threshold`. The lookup missed every time and fell back to 0.5, so the
     # service decided at 0.5 while every published figure said 0.32 -- recall 0.625 served
     # against 0.833 documented. A missing threshold is now an error rather than a silent
-    # default: serving an undocumented operating point is worse than refusing to start.
+    # default: refusing to start costs less than serving an operating point nothing documents.
     override = os.getenv("MODEL_THRESHOLD")
     if override:
         threshold = float(override)

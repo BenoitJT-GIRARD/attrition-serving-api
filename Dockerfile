@@ -19,15 +19,15 @@ RUN uv sync --frozen --no-dev --group serve --group db --no-install-project
 COPY --chown=appuser:appuser src ./src
 RUN uv sync --frozen --no-dev --group serve --group db
 
-# The served artefacts, and nothing else. The schema, the seeding and the request
-# fixtures are operator work, run from a checkout against the same database.
+# The served artefacts, and nothing else: no scripts, no SQL, no fixtures. What an operator
+# runs, they run from a checkout.
 COPY --chown=appuser:appuser models ./models
 
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 7860
 
-# The liveness probe is the service's own route, the one that answers without the model:
-# a container that starts and answers nothing looks healthy to an orchestrator without this.
+# The liveness probe is `/health`, and it deliberately needs neither the artefact nor the
+# database. Without a probe at all, an orchestrator counts a silent container as running.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/health', timeout=2)"
 

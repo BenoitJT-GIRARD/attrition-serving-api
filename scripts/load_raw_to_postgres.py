@@ -1,6 +1,6 @@
 """Load the three raw extracts into PostgreSQL, for the exploratory SQL views.
 
-This belongs to the analysis side, not to serving: the API never reads these tables. It
+An analysis step. Nothing on the serving path opens what it writes. It
 needs the extracts, which are not in the repository.
 """
 

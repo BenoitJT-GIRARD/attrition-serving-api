@@ -1,8 +1,8 @@
 """The five routes: health, two ways to score, and two ways to read the log back.
 
-Logging a prediction is best-effort on purpose. A database that is down should not stop the
-service from answering -- but it does mean an empty log with a healthy `/predict` is a
-silent failure, and the runbook says where to look.
+Logging a prediction is best-effort on purpose: the route returns its answer whether or not
+the insert succeeds. The consequence is that an empty log behind a healthy `/predict` is a
+silent failure, and `docs/operations.md` says where to look.
 
 `/predict_by_id` reads the features from `employees` so a caller can send an id instead of
 thirty-two fields; `/history` and `/history/{employee_id}` return what was decided, with
@@ -62,7 +62,7 @@ def predict(req: PredictRequest, db: Session = Depends(get_db)):
     payload = normalize_payload(req.features)
     missing, nulls = check_payload(payload)
 
-    # An incomplete payload is refused rather than filled in. Imputing a missing
+    # An incomplete payload is refused, never filled in. Imputing a missing
     # feature at serving time silently changes what was scored.
     if missing or nulls:
         raise HTTPException(

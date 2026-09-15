@@ -50,8 +50,8 @@ The answer carries six fields, and the last two are the ones worth reading:
 ```
 
 `stored` says whether the decision reached the database. Predictions are logged on a
-best-effort basis — a database that is down does not stop the service answering — so `stored:
-false` on a healthy `/predict` is the signal that the log is failing silently.
+best-effort basis: the route answers whether or not the log accepts the row, so
+`stored: false` on a healthy `/predict` is the signal that the log is failing silently.
 
 ### What each error code means
 
@@ -70,10 +70,10 @@ docker run -d --name attrition_api --env-file .env.docker -p 7860:7860 attrition
 ```
 
 The env file carries at least `API_KEY`, `DATABASE_URL` and `MODEL_VERSION`. The image holds
-the code and `models/`, and nothing else: the schema, the seeding and the request fixtures are
-operator work, run from a checkout against the same database. It runs as uid 1000, and its
-`HEALTHCHECK` calls `/health`, which is the one route that answers without the model — a
-container that starts and answers nothing looks healthy to an orchestrator otherwise.
+the code and `models/`, and stops there. Applying the schema, seeding the table and holding
+the request fixtures are all things an operator does from a checkout. It runs as uid 1000, and its
+`HEALTHCHECK` calls `/health`, chosen because it needs neither the artefact nor the database:
+an orchestrator gets an answer that means the process is alive and nothing more.
 
 The hosted deployment this was built for has been decommissioned, along with the managed
 database it wrote to. `docker compose up` brings the local equivalent back.
@@ -176,8 +176,8 @@ If the *decision* looks wrong while the probability looks right, it is the thres
 Every prediction and every `/history` row carries its `model_version`. A version of `dev` in
 production means nothing set it.
 
-A scikit-learn pickle is only readable by a compatible scikit-learn, and the card records the
-version that wrote it:
+The artefact is a pickle, and pickles travel badly between library versions. The card records
+which one wrote it, so the comparison is one command:
 
 ```bash
 python -c "import sklearn, json; c=json.load(open('models/model_card.json')); print('card', c['sklearn_version'], '| here', sklearn.__version__)"

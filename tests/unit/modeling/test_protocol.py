@@ -51,7 +51,7 @@ def test_the_threshold_reaches_the_recall_it_aims_for() -> None:
 
 
 def test_an_unreachable_target_does_not_fall_back_to_a_constant() -> None:
-    """0.5 taken from nowhere is how a threshold stops being traceable to anything."""
+    """A threshold nobody chose is a threshold nobody can defend."""
     y = np.array([0, 0, 0, 1])
     p = np.array([0.9, 0.8, 0.7, 0.1])
     assert select_threshold(y, p, target_recall=1.01) == pytest.approx(np.median(p))
@@ -94,7 +94,7 @@ def test_every_fold_is_scored_once_per_repeat() -> None:
 def test_the_summary_reports_the_optimism_of_choosing_a_threshold() -> None:
     """The recall aimed at on validation, minus the recall obtained on unseen data.
 
-    Choosing the threshold on the test set drives this to zero by construction, which is
+    A threshold read off the scoring fold makes this quantity vanish by construction, which is
     exactly why the earlier method could not see its own optimism.
     """
     X, y = _toy()

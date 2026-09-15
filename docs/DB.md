@@ -63,8 +63,8 @@ from `employees`.
 
 **The payload is JSONB** because the feature set changes over a model's life. JSONB absorbs
 that without a migration: a source that adds a field does not break the write, and what is
-stored is what was actually sent — not a projection of it onto the columns that existed when
-the table was designed.
+stored is the payload as it arrived, and not its shadow on whatever columns happened to exist
+the day the table was written.
 
 **Indexes.** One on `predictions.created_at` for the history endpoint's ordering, one on
 `predictions.employee_id` for the per-employee history. A GIN index on the JSONB would be the
@@ -83,8 +83,7 @@ next one if the payloads were ever queried by content; at this volume nothing ne
 | `scripts/db_run_checks.py` | replays `02_seed_checks.sql` statement by statement and prints what each returns |
 | `scripts/load_raw_to_postgres.py` | loads the three extracts so the exploratory views have something to read |
 
-The exploratory views belong to the analysis side, not to serving: the API never reads those
-tables. They are where the cleaning, the joins and the group statistics were done in SQL
+Those views are analysis, and the API never opens them. They are where the cleaning, the joins and the group statistics were done in SQL
 rather than in pandas — 201 lines that answer the same questions the first notebook does, from
 the database's side.
 
@@ -94,7 +93,7 @@ Ten rows, from `tests/fixtures/employees_sample.json`. They exercise the request
 API ↔ database integration tests, and a `/predict_by_id` demonstration.
 
 The full extract is not seeded, and not committed. [`data-source.md`](data-source.md) says
-what it is — a public, fictional dataset — and how to put it back. A `docker compose` in a
+what it is, a public and fictional dataset, and how to put it back. A `docker compose` in a
 public repository is not where a dataset belongs even when nobody is described by it.
 
 ## Queries worth knowing
@@ -123,5 +122,5 @@ Every prediction writes one row, and rows are never updated. The exact payload i
 against a reconstruction of it. `model_version` and `threshold` travel with the probability,
 so a decision taken six months ago can be explained without guessing which model made it.
 
-That is the whole point. A probability without the threshold that turned it into a decision
-records nothing usable.
+That is the whole point of the table. A row that held the probability alone would record an
+opinion, not a decision.

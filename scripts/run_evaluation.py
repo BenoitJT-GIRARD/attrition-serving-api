@@ -15,7 +15,7 @@ Writes to `reports/`:
                             to publish
 ``cost_curve.csv``          the threshold that minimises expected cost, per cost ratio
 ``calibration.csv``         reliability with equal-population bins, per arm
-``subgroups.csv``           alert rate and recall per subgroup at the shipped threshold
+``subgroups.csv``           how the alert list is distributed across three attributes
 ``pr_curves.csv``           the precision-recall curve of each model family, averaged over
                             the five repeats, with the standard error at each recall
 ``permutation_importance.csv`` what shuffling each feature costs in average precision,
@@ -49,7 +49,7 @@ from attrition_serving.preprocessing import make_feature_groups
 
 TARGET = "a_quitte_l_entreprise"
 
-#: How the probabilities are recalibrated before a threshold is read off them.
+#: The three recalibration settings `protocol.ProtocolConfig` accepts, run side by side.
 ARMS = ("none", "holdout", "crossfit")
 
 #: The arm that ships. The service returns a number it calls a probability and writes it to

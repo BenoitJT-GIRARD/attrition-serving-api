@@ -32,8 +32,8 @@ def make_logreg(groups: FeatureGroups) -> Pipeline:
         class_weight="balanced",
         solver="saga",
         # Ridge, spelled the way scikit-learn 1.8 asks for it: `penalty="l2"` is deprecated
-        # in 1.8 and gone in 1.10, and a deprecation warning on every fit is a warning
-        # nobody reads by the third run.
+        # in 1.8 and gone in 1.10, and a warning printed on every fit stops being read
+        # by the third run.
         l1_ratio=0.0,
         # `saga` is stochastic. Without a seed the published threshold moved between two
         # runs of the same script on the same data -- 0.508 and 0.545 at a cost ratio of

@@ -107,6 +107,7 @@ omit = [
     "*/figure_style.py",
     "scripts/capture.py",
     "scripts/smoke.py",
+    "scripts/run_notebooks.py",
 ]
 
 [tool.coverage.report]

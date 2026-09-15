@@ -1,7 +1,7 @@
-"""The request and response shapes, which are also the generated OpenAPI documentation.
+"""The request and response models, from which the OpenAPI page is generated.
 
-`PredictResponse` returns the threshold beside the probability. That is not decoration: a
-probability without the threshold that turned it into a decision is not a record of
+`PredictResponse` returns the threshold beside the probability. That carries the contract: a
+probability that travels without its threshold is not a record of
 anything, and the same pair is what goes into the decision log.
 """
 

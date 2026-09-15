@@ -48,7 +48,7 @@ def _log1p_safe(X):
     # X arrive en array 2D
     X = np.asarray(X, dtype=float)
     # log1p is undefined below -1. Negative values are clipped to zero rather than
-    # dropped, and the decision is written here rather than left to be rediscovered.
+    # dropped, and the decision is written here and not left to be rediscovered.
     X = np.clip(X, a_min=0, a_max=None)
     return np.log1p(X)
 

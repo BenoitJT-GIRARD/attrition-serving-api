@@ -30,8 +30,8 @@ through it.
 So this repository is built around two questions a model alone does not answer. **At what
 threshold should it decide, and who can check that it decided there?**
 
-The data is 1 470 employees from three extracts — contract and demographics, annual reviews, an
-internal survey — joined on the employee. 237 of them left, a base rate of 16 %. That imbalance
+The data is 1 470 employees, joined on the employee from three extracts: contract and
+demographics, annual reviews, an internal survey. 237 of them left, a base rate of 16 %. That imbalance
 is why accuracy appears nowhere below: on a churn-prediction problem with that balance,
 predicting "stays" for everyone scores 84 % and finds nobody.
 
@@ -81,19 +81,16 @@ pipeline stands a real database up so the middle tier runs instead of skipping.
 ![Precision-recall curves for the logistic regression and the random forest, with a band of one standard error over the 5 repeats and the constant baseline as a horizontal reference, n = 7350 scored rows](reports/figures/pr_curves.png)
 
 <!-- source: reports/evaluation_summary.json -->
-The model is scored by 5×5 repeated stratified cross-validation over all 1 470 rows: every
-employee is scored five times by a model that never saw them in training, which is 7 350 scored
-rows and 1 185 departures across 25 folds. **Average precision is 0.607 ± 0.058** on the raw
-scores, n = 7 350, against a base rate of 0.161: three to four times what a model that learns
-nothing gets. `±` is the standard deviation between the 25 folds, and `docs/protocol.md` defines every
-name used here.
+Twenty-five folds, 7 350 scored rows, 1 185 departures. **Average precision is 0.607 ± 0.058**,
+n = 7 350, where a model that learns nothing scores 0.161. The `±` is the fold-to-fold standard
+deviation; [`docs/protocol.md`](docs/protocol.md) defines every name on this page and says how
+the folds are built.
 
 <!-- source: reports/evaluation_summary.json -->
-The scores that ship are not those. The service returns a number it calls `proba_depart` and
-writes it to a database column of the same name, so it has to be a probability, and uncalibrated
-it was not: **it predicted an average risk of 0.375 against a true rate of 0.161**, over the
-same n = 7 350 rows. Isotonic recalibration brings the calibration error from 0.214 to 0.015
-and costs average precision, 0.607 down to 0.569.
+The scores that ship are not those. Raw, **the model predicted an average risk of 0.375 where
+0.161 of employees left**, over the same n = 7 350 rows: it ranked well and its numbers meant
+nothing. Recalibration fixes the scale at a cost, 0.607 of average precision down to 0.569, and
+the reliability curve below is what that bought.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![Reliability curves for the three calibration arms, observed departure rate against mean predicted probability in equal-population bins, n = 7350 scored rows](reports/figures/calibration.png)
@@ -102,22 +99,21 @@ and costs average precision, 0.607 down to 0.569.
 ![The cost curve: departures caught, employees flagged and precision at eight cost ratios, with the shipped ratio marked, n = 7350 scored rows over 25 folds](reports/figures/cost_curve.png)
 
 <!-- source: reports/cost_curve.csv -->
-**The shipped operating point is a threshold of 0.111 on the calibrated scale**, over n = 7 350
-scored rows. It is the expected-cost minimum when one missed departure is worth eight
-unnecessary retention conversations: the service then flags 37 % of employees and catches 78 %
-of the people who leave. Eight is an assumption, not a measurement, and it is the one number
-here an employer would replace with their own; the curve above shows what each other ratio
-implies.
+**The shipped operating point is a threshold of 0.111**, over n = 7 350 scored rows: 37 % of
+employees on the list, 78 % of the departures caught. It minimises expected cost when one
+missed departure is worth eight wasted conversations, which is a hypothesis and not a
+measurement — the curve prices the seven other ratios, and an employer arriving with their own
+reads the line they need.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![Recall per subgroup at the shipped threshold, with a 95 % Wilson interval and the group size on each bar, n = 7350 scored rows](reports/figures/subgroups.png)
 
 <!-- source: reports/subgroups.csv -->
-Every group is flagged at roughly twice its own departure rate, so no group is over-flagged
-relative to how often it actually leaves. Recall is less even: the model finds **86 % of
-departures among single employees and 63 % among married ones**, over n = 7 350 scored rows. No
-correction is applied and no fairness claim is made. `docs/protocol.md` carries the full table
-with the count behind each bar.
+Each group is alerted on at about twice the rate at which it leaves, so the list does not
+concentrate anywhere the departures do not. Recall is the uneven column: **86 % of departures
+found among single employees, 63 % among married ones**, over n = 7 350 scored rows. Nothing is
+corrected and nothing is claimed; [`docs/protocol.md`](docs/protocol.md) gives the eight rows
+with the events behind each.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![Permutation importance of the fifteen largest features, average precision lost when a column is shuffled, with one standard deviation across the 25 folds, n = 7350 scored rows](reports/figures/permutation_importance.png)
@@ -140,9 +136,8 @@ events in a 90/10 split. Three files gave three different numbers, one of them p
 code in the repository. The probability was not a probability. And the API required five fields
 it never read.
 
-Each one is given with the number before and the number after in
-[`docs/protocol.md`](docs/protocol.md#the-six-things-that-were-wrong), because a correction
-nobody can check is not one.
+[`docs/protocol.md`](docs/protocol.md#the-six-things-that-were-wrong) gives each one with what
+it was worth, measured both ways round. A correction nobody can check is a claim.
 
 ## Running it
 
@@ -169,8 +164,8 @@ uv run python scripts/build_figures.py
 ```
 
 Recomputing the tables themselves needs the extracts.
-[`docs/data-source.md`](docs/data-source.md) says what they are — a public, fictional IBM
-dataset — and rebuilds them from the upstream file:
+[`docs/data-source.md`](docs/data-source.md) says what they are, a public and fictional IBM
+dataset, and rebuilds them from the upstream file:
 
 ```bash
 uv run python scripts/build_extracts.py --source path/to/WA_Fn-UseC_-HR-Employee-Attrition.csv
@@ -208,29 +203,30 @@ was decided before it.
 ## What this does not prove
 
 <!-- source: reports/evaluation_summary.json -->
-**n = 1 470 rows at a base rate of 0.161 is a small dataset.** Cross-validation narrows
-the intervals; it does not create information. No hyper-parameter search and no gradient boosting
-appear anywhere, because with a fold-to-fold spread of 0.058 neither would be readable.
+**n = 1 470 rows at a base rate of 0.161.** Repeating the cross-validation narrows the
+interval around each number; it adds no information the rows do not hold. Nothing finer than the
+0.058 fold-to-fold spread can be distinguished here, which is why no search over hyper-parameters
+and no boosted trees appear.
 
-**The cost ratio is an assumption.** The shipped threshold is exactly as defensible as the ratio
-of eight that produced it.
+**Eight conversations per missed departure is a hypothesis.** The threshold inherits exactly as
+much justification as that figure has, and no more.
 
-**Nothing here establishes cause.** A variable that separates leavers from stayers can be a
-symptom of the decision to leave: someone who has decided to go stops asking for training. A
-cross-section cannot tell the two apart. The model ranks risk; it names no lever to pull.
+**No causal claim.** A column that tells the two groups apart may be downstream of the decision
+to leave: someone on their way out stops asking for training. A single cross-section cannot
+separate the two, and a ranking of risk is not a list of levers.
 
-**The subgroup table describes, it does not guarantee.** It shows a recall gap between married
-and single employees, establishes nothing about why, and corrects nothing.
+**The subgroup table is a description.** It records a recall gap between two marital statuses.
+It does not say where the gap comes from, and nothing in the repository closes it.
 
-**No drift monitoring.** A model served without it would have to be re-evaluated on new data
-before being trusted a year from now.
+**Nothing watches for drift.** Before trusting this model on next year's employees, someone
+would have to score them and look; `docs/operations.md` names the signal to look at.
 
 ## Licence and data
 
 MIT, for the code.
 
-The data is IBM's *HR Analytics Employee Attrition & Performance*, a sample dataset IBM's own
-data scientists generated. The rows are fictional and describe nobody. The three files under
+The data is IBM's *HR Analytics Employee Attrition & Performance*. It was generated, not
+collected, and no row of it corresponds to a person. The three files under
 `data/raw/` are a French-renamed, three-way split of that file, and they are not
 redistributed here. [`docs/data-source.md`](docs/data-source.md) proves the correspondence
 column by column, and `scripts/build_extracts.py` rebuilds them from the public upstream.

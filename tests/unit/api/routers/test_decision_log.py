@@ -1,9 +1,8 @@
 """The decision log is best-effort, and the answer says which it was.
 
-The module docstring of `routers/predict.py` has always said the write is best-effort. It was
-not: the insert ran unguarded, so a database that was down turned every `/predict` into a 500
-— the opposite of what the documentation promised. The system tier found it by starting the
-service without a database; this pins the behaviour where it lives.
+`routers/predict.py` promised this in its docstring and did not deliver it: the insert was
+unguarded, so an unreachable database produced a 500 on every prediction. The system tier found
+that by starting the service without one; these tests hold the behaviour in place.
 """
 
 from __future__ import annotations

@@ -33,8 +33,8 @@ from attrition_serving.preprocessing import make_feature_groups
 TARGET = "a_quitte_l_entreprise"
 
 #: Above this absolute Spearman correlation, two features carry substantially the same
-#: information. Reported, not dropped: a linear model with L2 handles collinearity, and
-#: dropping a column changes what the coefficients mean.
+#: information. They are reported and kept: ridge regularisation absorbs collinearity, and
+#: removing one of a pair silently redefines the other's coefficient.
 REDUNDANCY_THRESHOLD = 0.80
 
 

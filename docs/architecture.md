@@ -37,7 +37,7 @@ start** when the card has no threshold. `MODEL_THRESHOLD` is an operator overrid
 source of the default, and `.env.example` deliberately leaves it empty.
 
 That is five locks on one invariant, and they exist because this service once read a key the
-export does not write, fell back to 0.5, and served an operating point nothing documented.
+export does not write. What it served instead was 0.5, which nothing in the repository chose.
 [`protocol.md`](protocol.md#the-six-things-that-were-wrong) has the numbers.
 
 ## One root, one environment loader
@@ -51,8 +51,8 @@ from another directory.
 `env.py` is the only module that loads a dotenv file, and it honours `SKIP_DOTENV=1`. That
 used to be false: `api/settings.py` had its own loader, which ignored the flag and loaded with
 `override=True`. On the machine of anyone who had followed the setup and created `.env.local`,
-the test that asserts the served threshold had its environment overwritten by that file —
-despite setting `SKIP_DOTENV` itself — and could pass or fail for the wrong reason.
+the test that asserts the served threshold had its environment overwritten by that file,
+despite setting `SKIP_DOTENV` itself, and could pass or fail for the wrong reason.
 
 ## Parquet between the steps, CSV for what is published
 
@@ -64,7 +64,7 @@ a published number — `reports/` is meant to be clicked on, not loaded.
 
 Request and response shapes are Pydantic models, which is what makes the generated OpenAPI
 page an accurate description of the service rather than a hand-written one that drifts.
-`normalize_payload` accepts what an HR export actually contains — `"M"`, `"Oui"`, `"11 %"` —
+`normalize_payload` accepts what an HR export actually contains (`"M"`, `"Oui"`, `"11 %"`)
 and converts it once, at the edge, so the model never sees a string it has to guess about.
 
 `Depends()` in a default argument is how FastAPI declares a dependency, and the linter's rule
@@ -108,9 +108,9 @@ payload normalisation; the train/serve column alignment; the mapping in `data/so
 against the profile the extracts have to show.
 
 **Integration** — a prediction written to PostgreSQL, and `/history` returning it with the
-threshold and the model version that produced it. These need a database; without one they skip
-in three seconds naming the command that would make them run. They used to take four and a
-half minutes to report the same thing, because nothing set a connect timeout.
+threshold and the model version that produced it. Without a database they skip, and the skip
+message is the command that would start one. The connect timeout is why that takes three
+seconds instead of the four and a half minutes it once did.
 
 **System** — the service started in its own process, a hundred fixtures scored through HTTP,
 and the observed alert rate checked against the fold interval the protocol published. It is
