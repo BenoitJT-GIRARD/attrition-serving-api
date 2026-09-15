@@ -106,6 +106,7 @@ omit = [
     # else's tests.
     "*/figure_style.py",
     "scripts/capture.py",
+    "scripts/smoke.py",
 ]
 
 [tool.coverage.report]
