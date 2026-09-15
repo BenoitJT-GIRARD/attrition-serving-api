@@ -95,7 +95,14 @@ def steps() -> None:
 
     for name in (*CHAIN, "build_figures"):
         print(f"[run] scripts/{name}.py")
-        runpy.run_path(str(SCRIPTS_DIR / f"{name}.py"), run_name="__main__")
+        try:
+            runpy.run_path(str(SCRIPTS_DIR / f"{name}.py"), run_name="__main__")
+        except SystemExit as stop:
+            # A script that ends on `raise SystemExit(main())` raises SystemExit(0) on
+            # success, and running it under `runpy` would end this process there -- with
+            # every step after it skipped and the run reported as fine.
+            if stop.code:
+                raise
 
 
 # --- What the evidence records ----------------------------------------------

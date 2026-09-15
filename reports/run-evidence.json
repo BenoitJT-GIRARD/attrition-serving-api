@@ -1,0 +1,39 @@
+{
+  "command": "uv run python scripts/smoke.py",
+  "ran_at": "2026-09-15",
+  "git_revision": "e07327c656c4b0e43ff79514d4ab1c5646da0723",
+  "tool_versions": {
+    "python": "3.12.12",
+    "scikit-learn": "1.8.0",
+    "pandas": "2.3.3",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3",
+    "statsmodels": "0.14.6",
+    "uv": "uv 0.11.6 (65950801c 2026-04-09 x86_64-pc-windows-msvc)",
+    "docker": "Docker version 29.2.0, build 0b9d198"
+  },
+  "duration_seconds": 86.1,
+  "key_output": [
+    "reports/data_quality.csv",
+    "reports/cleaning_trace.csv",
+    "reports/redundant_features.csv",
+    "reports/feature_encoding.csv",
+    "reports/univariate_tests.csv",
+    "reports/evaluation_cv.csv",
+    "reports/evaluation_summary.json",
+    "reports/baselines.csv",
+    "reports/cost_curve.csv",
+    "reports/calibration.csv",
+    "reports/subgroups.csv",
+    "reports/pr_curves.csv",
+    "reports/permutation_importance.csv",
+    "reports/figures/pr_curves.png",
+    "reports/figures/calibration.png",
+    "reports/figures/cost_curve.png",
+    "reports/figures/subgroups.png",
+    "reports/figures/permutation_importance.png",
+    "models/model_card.json",
+    "models/expected_features.json"
+  ],
+  "workflow_run_url": null
+}
