@@ -15,7 +15,7 @@
       "app_state": "the service started from the committed model card, against the PostgreSQL that `docker compose up -d` brings up, with the ten request fixtures seeded and no prediction made yet",
       "data_source": "none: the page is generated from the Pydantic models",
       "demonstrates_behaviour": "the five routes and the API-key scheme are generated from the Pydantic models, so the page a caller reads cannot drift from the contract the service enforces",
-      "git_revision": "adde409c842df11d3d892f0513d7b1b16872fb5d",
+      "git_revision": "ce67714cda1e2a1d3f3240929429512e21f938a2",
       "depends_on": [
         "src/attrition_serving/api/main.py",
         "src/attrition_serving/api/schemas.py"
@@ -35,7 +35,7 @@
       "app_state": "the same service after the prediction above, so the decision log holds at least one row for employee 1",
       "data_source": "the decision log this service wrote in the capture above",
       "demonstrates_behaviour": "GET /history/1 returns what was decided for that employee and when, each row carrying its own threshold and model version: a past decision can be explained without guessing which model made it",
-      "git_revision": "adde409c842df11d3d892f0513d7b1b16872fb5d",
+      "git_revision": "ce67714cda1e2a1d3f3240929429512e21f938a2",
       "paired_with": "prediction-logged.png",
       "depends_on": [
         "src/attrition_serving/api/routers/predict.py"
@@ -55,7 +55,7 @@
       "app_state": "the same service, authorised in the Swagger dialog with a throwaway key, then POST /predict_by_id/1 executed from the documentation page against employee 1 of the seeded fixtures",
       "data_source": "one of the ten fictional rows under tests/fixtures/, seeded into the employees table by scripts/db_seed_employees.py",
       "demonstrates_behaviour": "the answer carries the threshold that turned the probability into a decision, the version of the model that produced it, and `stored: true` with the row id the decision was written to -- which is the claim this repository exists to make",
-      "git_revision": "adde409c842df11d3d892f0513d7b1b16872fb5d",
+      "git_revision": "ce67714cda1e2a1d3f3240929429512e21f938a2",
       "depends_on": [
         "src/attrition_serving/api/routers/predict.py",
         "models/model_card.json"

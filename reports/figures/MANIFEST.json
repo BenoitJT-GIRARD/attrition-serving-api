@@ -3,7 +3,7 @@
     "calibration.png": {
       "axes": [
         {
-          "title": "",
+          "title": "What a returned probability is worth",
           "x": "mean predicted probability, equal-population bins",
           "y": "observed departure rate in the bin"
         }
@@ -14,12 +14,12 @@
       "sha256": "33ea4d24d75fb590ad5e732e70c990aace6c4a3c514b0536f4be06c57d69bbcb",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-15"
+      "written": "2026-09-16"
     },
     "cost_curve.png": {
       "axes": [
         {
-          "title": "",
+          "title": "The threshold is a cost decision, and this is the price list",
           "x": "wasted conversations one missed departure is worth",
           "y": "share of employees, or of departures"
         }
@@ -30,28 +30,28 @@
       "sha256": "e587a8e0bf7c4d4906c8442f028c02efda0a27be0e0ebc7c7c70d0835c34b2ba",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-15"
+      "written": "2026-09-16"
     },
     "permutation_importance.png": {
       "axes": [
         {
-          "title": "",
+          "title": "What each feature is worth — the 15 largest of 37",
           "x": "average precision lost when the column is shuffled",
           "y": "feature"
         }
       ],
-      "dispersion": "±1 standard deviation across the 25 folds",
+      "dispersion": "one point per fold; rule: the mean; bar: ±1 standard error of the mean",
       "dpi": 200,
       "n": "n(scored rows) = 7350, n(folds) = 25",
-      "sha256": "dff42adb93b99114a67567202a012c066c9ef571a0faba75f0e33acb1ddbfe53",
+      "sha256": "0bc9f575ce0bf76a65c48134cd1b9c1ccd459b91c0f7fa38e326dbed72fce88c",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-15"
+      "written": "2026-09-16"
     },
     "pr_curves.png": {
       "axes": [
         {
-          "title": "",
+          "title": "What each model family buys, at every operating point",
           "x": "recall — share of departures found",
           "y": "precision — share of alerts that were departures"
         }
@@ -62,12 +62,12 @@
       "sha256": "ad7196e1e30fb45daa57878a0678ad382221bf891a45eb66507f18826508da12",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-15"
+      "written": "2026-09-16"
     },
     "subgroups.png": {
       "axes": [
         {
-          "title": "",
+          "title": "Who the alerts land on, at the shipped threshold",
           "x": "recall — share of that group's departures the alert list catches",
           "y": "subgroup"
         }
@@ -78,7 +78,7 @@
       "sha256": "258b0442915bc63b9789eb45a8f67ccaa5f9be8a624fd73d333f9a079c8b9280",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-15"
+      "written": "2026-09-16"
     }
   },
   "schema": "image-manifest/1"

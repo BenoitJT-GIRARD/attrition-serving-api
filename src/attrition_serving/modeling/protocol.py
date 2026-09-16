@@ -272,12 +272,31 @@ def permutation_importance_cv(
         drops.append(pd.Series(result.importances_mean, index=X.columns))
 
     table = pd.concat(drops, axis=1)
+    table.columns = range(table.shape[1])
+    return (
+        table.rename_axis("feature")
+        .stack()
+        .rename("importance")
+        .reset_index()
+        .rename(columns={"level_1": "fold"})
+    )
+
+
+def summarise_importance(per_fold: pd.DataFrame) -> pd.DataFrame:
+    """The mean, the standard error of that mean, and the count behind both.
+
+    The standard error is what the figure draws, because the quantity being compared is the
+    mean of the folds, not the folds themselves. The standard deviation stays in the table:
+    it says how much a single fold moves, which is a different question and a real one.
+    """
+    grouped = per_fold.groupby("feature")["importance"]
     out = pd.DataFrame(
         {
-            "feature": table.index,
-            "importance_mean": table.mean(axis=1).to_numpy(),
-            "importance_sd": table.std(axis=1, ddof=1).to_numpy(),
-            "n_folds": table.shape[1],
+            "feature": grouped.mean().index,
+            "importance_mean": grouped.mean().to_numpy(),
+            "importance_sd": grouped.std(ddof=1).to_numpy(),
+            "importance_sem": (grouped.std(ddof=1) / grouped.count() ** 0.5).to_numpy(),
+            "n_folds": grouped.count().to_numpy(),
         }
     )
     return out.sort_values("importance_mean", ascending=False).reset_index(drop=True)

@@ -44,6 +44,7 @@ from attrition_serving.modeling.protocol import (
     reliability,
     subgroup_rates,
     summarise,
+    summarise_importance,
 )
 from attrition_serving.preprocessing import make_feature_groups
 
@@ -173,6 +174,9 @@ def main() -> None:
     importance = permutation_importance_cv(
         X, y, lambda: make_logreg(groups), params=FINAL_MODEL_PARAMS
     )
+    importance_folds = importance
+    importance = summarise_importance(importance_folds)
+    importance_folds.to_csv(PATHS.reports / "permutation_importance_folds.csv", index=False)
     importance.to_csv(PATHS.reports / "permutation_importance.csv", index=False)
 
     curve = cost_curve(out_of_fold[SHIPPED_ARM], ratios=COST_RATIOS)
@@ -236,6 +240,7 @@ def main() -> None:
         "subgroups.csv",
         "pr_curves.csv",
         "permutation_importance.csv",
+        "permutation_importance_folds.csv",
     ):
         print(f"  [ok] reports/{path}")
 

@@ -23,6 +23,7 @@ from attrition_serving.figure_style import (
     PALETTE,
     apply_style,
     close,
+    distribution,
     reference_line,
     save_figure,
     series_colours,
@@ -261,23 +262,34 @@ def figure_subgroups() -> None:
 
 
 def figure_importance(top_n: int = 15) -> None:
+    """One point per fold, the mean as a rule, and the standard error of that mean.
+
+    A bar with a standard deviation said the same thing for a feature whose twenty-five
+    folds agree and for one where half of them found nothing: both drew a long whisker. The
+    folds are drawn, so the reader sees which of the two they are looking at.
+    """
     table = _read("permutation_importance.csv")
-    if table is None:
+    folds = _read("permutation_importance_folds.csv")
+    if table is None or folds is None:
         return
     total = len(table)
     table = table.head(top_n).iloc[::-1]
     positions = np.arange(len(table))
+    groups = [
+        folds.loc[folds["feature"] == name, "importance"].to_numpy() for name in table["feature"]
+    ]
 
     figure, axis = plt.subplots(figsize=(7, 6))
-    axis.barh(positions, table["importance_mean"], color=PALETTE["primary"], height=0.62)
-    axis.errorbar(
-        table["importance_mean"],
+    distribution(
+        axis,
         positions,
-        xerr=table["importance_sd"],
-        fmt="none",
-        ecolor=PALETTE["ink"],
-        elinewidth=1,
-        capsize=3,
+        groups,
+        orient="h",
+        colours=[PALETTE["primary"]] * len(groups),
+        width=0.55,
+        jitter=0.14,
+        dot_size=11,
+        dot_alpha=0.4,
     )
     reference_line(axis, x=0.0)
     axis.set_yticks(positions)
@@ -290,7 +302,7 @@ def figure_importance(top_n: int = 15) -> None:
         figure,
         FIGURES_DIR / "permutation_importance.png",
         n={"scored rows": 7350, "folds": int(table["n_folds"].max())},
-        dispersion="±1 standard deviation across the 25 folds",
+        dispersion="one point per fold; rule: the mean; bar: ±1 standard error of the mean",
         source=SOURCE,
     )
     close(figure)
