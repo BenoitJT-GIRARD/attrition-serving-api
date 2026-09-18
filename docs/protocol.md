@@ -69,6 +69,12 @@ somebody who was staying anyway. The protocol prices the whole range.
 n = 7 350, so every share above is a share of 7 350 scored rows over 25 folds.
 `reports/cost_curve.csv` carries the eight ratios with the fold-to-fold spread of each.
 
+> **How to read it.** Each row is one answer to the question in the first column, and the rest
+> of the row is what that answer costs. The threshold is the score at or above which the service
+> flags somebody. The alert rate is the share of all employees who end up on the list. Recall is
+> the share of the people who left that the list contains, and precision is the share of the
+> list who really left. Reading downwards, a longer list always trades precision for recall.
+
 The ratio is the reader's to set. Past about 13 the alert list covers one employee in two, and
 the last row is a model that flags everybody: the curve has left the range where a retention
 programme can act on it.
@@ -106,6 +112,13 @@ The same model, at the shipped threshold, by attribute.
 | department | Sales | 2 230 | 0.206 | 45 % | 79 % |
 | department | R&D | 4 805 | 0.138 | 32 % | 75 % |
 | department | HR | 315 | 0.190 | 46 % | 82 % |
+
+> **How to read it.** One row per group, where R&D (research and development) and HR (human
+> resources) are departments. The base rate is the share of that group who actually left,
+> measured and not predicted. The alert rate is the share of the group the service puts on the
+> list, and recall is the share of the group's own departures the list catches. A group alerted
+> on at roughly twice its base rate is being handled like every other; the recall column is
+> where the groups genuinely separate.
 
 The ratio of alert rate to base rate stays between 2.0 and 2.6 across the eight rows, so the
 list tracks where departures actually happen.

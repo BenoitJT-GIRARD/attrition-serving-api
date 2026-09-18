@@ -85,23 +85,44 @@ pipeline stands a real database up so the middle tier runs instead of skipping.
 <!-- source: reports/figures/MANIFEST.json -->
 ![Precision-recall curves for the logistic regression and the random forest, with a band of one standard error over the 5 repeats and the constant baseline as a horizontal reference, n = 7350 scored rows](reports/figures/pr_curves.png)
 
+> **How to read it.** Each point on a curve is one possible threshold, one choice of how long
+> the alert list is. Moving right catches a larger share of the people who left, called recall;
+> moving down means a smaller share of that list really leaves, called precision. The dashed
+> line is what flagging names at random would give. The higher curve buys more departures for
+> the same number of wasted conversations, and the band shows how much each curve moves between
+> repeats.
+
 <!-- source: reports/evaluation_summary.json -->
 Twenty-five folds, 7 350 scored rows, 1 185 departures. **Average precision is 0.607 ± 0.058**,
 n = 7 350, where a model that learns nothing scores 0.161. The `±` is the fold-to-fold standard
 deviation; [`docs/protocol.md`](docs/protocol.md) defines every name on this page and says how
 the folds are built.
 
+<!-- source: reports/figures/MANIFEST.json -->
+![Reliability curves for the three calibration arms, observed departure rate against mean predicted probability in equal-population bins, n = 7350 scored rows](reports/figures/calibration.png)
+
+> **How to read it.** The scored employees are sorted by the risk they were given and cut into
+> ten groups of equal size. For each group, the horizontal axis is the risk the model promised
+> and the vertical axis is the share who actually left. A group sitting on the diagonal got a
+> promise worth keeping. The olive line falls far below it, so a raw score ranks employees
+> without measuring anything. Isotonic recalibration, a monotone rescaling fitted after
+> training, puts both arms back onto the diagonal.
+
 <!-- source: reports/evaluation_summary.json -->
 The scores that ship are not those. Raw, **the model predicted an average risk of 0.375 where
 0.161 of employees left**, over the same n = 7 350 rows: it ranked well and its numbers meant
 nothing. Recalibration fixes the scale at a cost, 0.607 of average precision down to 0.569, and
-the reliability curve below is what that bought.
-
-<!-- source: reports/figures/MANIFEST.json -->
-![Reliability curves for the three calibration arms, observed departure rate against mean predicted probability in equal-population bins, n = 7350 scored rows](reports/figures/calibration.png)
+the reliability curve above is what that bought.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![The cost curve: departures caught, employees flagged and precision at eight cost ratios, with the shipped ratio marked, n = 7350 scored rows over 25 folds](reports/figures/cost_curve.png)
+
+> **How to read it.** The horizontal axis is the one assumption an employer has to make: how
+> many pointless conversations a single missed departure is worth. Each column prices that
+> choice. Reading up a column gives the share of departures the list catches, the share of
+> employees it puts on the list, and the share of that list who really leave. Accepting a higher
+> ratio catches more departures and lengthens the list, and the dashed marker is the ratio this
+> service ships.
 
 <!-- source: reports/cost_curve.csv -->
 **The shipped operating point is a threshold of 0.111**, over n = 7 350 scored rows: 37 % of
@@ -113,6 +134,13 @@ reads the line they need.
 <!-- source: reports/figures/MANIFEST.json -->
 ![Recall per subgroup at the shipped threshold, with a 95 % Wilson interval and the group size on each bar, n = 7350 scored rows](reports/figures/subgroups.png)
 
+> **How to read it.** Each bar is one group of employees, and its length is the share of that
+> group's departures the alert list catches. The departments are Sales, R&D (research and
+> development) and HR (human resources). The whisker is a 95 % Wilson interval, the range the
+> bar would plausibly move across if the measurement were repeated; it widens where a group is
+> small, and the count printed inside each bar says how small. A gap counts only when two
+> whiskers fail to overlap.
+
 <!-- source: reports/subgroups.csv -->
 Each group is alerted on at about twice the rate at which it leaves, so the list does not
 concentrate anywhere the departures do not. Recall is the uneven column: **86 % of departures
@@ -122,6 +150,13 @@ with the events behind each.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![Permutation importance of the fifteen largest features, average precision lost when a column is shuffled, with one standard deviation across the 25 folds, n = 7350 scored rows](reports/figures/permutation_importance.png)
+
+> **How to read it.** Each row is one column of the dataset. Its value is measured by
+> scrambling that column at random and watching how much ranking quality the model loses, so a
+> long row means the model leaned on it heavily. Every dot is one fold of the cross-validation,
+> the rule is their mean, and the bar is the standard error of that mean. The column names are
+> the French ones the dataset ships with. A heavy row says the model uses the column, and
+> nothing about cause.
 
 <!-- source: reports/permutation_importance.csv -->
 Shuffling one column costs far more than any other: **overtime is worth 0.193 ± 0.026 of
