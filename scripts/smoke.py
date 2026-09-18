@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import platform
 import shutil
-import subprocess
+import subprocess  # nosec B404 - local processes, constant argv
 import sys
 import time
 from datetime import UTC, datetime
@@ -109,7 +109,7 @@ def steps() -> None:
 
 
 def _git(*arguments: str) -> str:
-    done = subprocess.run(
+    done = subprocess.run(  # nosec B603 B607 - constant argv, built here
         ["git", *arguments], cwd=ROOT_DIR, capture_output=True, text=True, check=False
     )
     return done.stdout.strip()
@@ -124,7 +124,7 @@ def tool_versions() -> dict[str, str]:
             versions[name] = "not installed"
     for binary, arguments in (("uv", ("--version",)), ("docker", ("--version",))):
         if shutil.which(binary):
-            done = subprocess.run([binary, *arguments], capture_output=True, text=True, check=False)
+            done = subprocess.run([binary, *arguments], capture_output=True, text=True, check=False)  # nosec B603 - constant argv, built here
             versions[binary] = done.stdout.strip() or "unknown"
     return versions
 
