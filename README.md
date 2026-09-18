@@ -16,6 +16,11 @@ managed database it wrote to are both gone; `docker compose up` brings the local
 back in one command. Continuous integration runs on push and on pull requests, against a real
 PostgreSQL service container.
 
+**No employment decision should be taken from this alert list.** The rows are a public
+teaching dataset and describe nobody, the list is a demonstration of a serving pipeline, and
+ranking named people by their odds of leaving is a choice an employer owns, and never one a
+model makes.
+
 ## The problem
 
 An HR team that wants to keep people has to know who is about to go, early enough to talk to
