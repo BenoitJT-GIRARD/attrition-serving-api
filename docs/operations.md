@@ -86,7 +86,7 @@ DATABASE_URL=postgresql+psycopg://postgres:<password>@db.<ref>.<host>:5432/postg
 
 ## The pipeline
 
-On every push and pull request: `uv sync --frozen`, `ruff check`, `ruff format --check`,
+Started by hand from the Actions tab: `uv sync --frozen`, `ruff check`, `ruff format --check`,
 `bandit -c pyproject.toml`, then `pytest` against a real PostgreSQL service container, so the
 integration tier runs instead of skipping. `SKIP_DOTENV=1` is set, so a stray `.env` on a
 runner cannot change what the tests read.

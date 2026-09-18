@@ -13,8 +13,8 @@
 problem; MLOps is the subject. The model is small, and what is worth reading is the machinery
 around it: the frozen artefact, the decision log, the pipeline that keeps them honest. The hosted deployment and the
 managed database it wrote to are both gone; `docker compose up` brings the local equivalent
-back in one command. Continuous integration runs on push and on pull requests, against a real
-PostgreSQL service container.
+back in one command. Continuous integration ran green on the commit published here, against a
+real PostgreSQL service container, and it now starts by hand.
 
 **No employment decision should be taken from this alert list.** The rows are a public
 teaching dataset and describe nobody, the list is a demonstration of a serving pipeline, and
@@ -75,7 +75,7 @@ the threshold the service must read.
 exploratory runs. Neither is on the serving path, and the image installs neither: what is
 served is one frozen artefact and the code that reads it.
 
-The tooling around it: **uv** locks the environment, **Ruff** and **Bandit** gate every push,
+The tooling around it: **uv** locks the environment, **Ruff** and **Bandit** gate the pipeline,
 and **pytest** is split by tier — the last of which boots the service as its own process and
 sends it a hundred payloads over HTTP. **Docker** builds the image, and the **GitHub Actions**
 pipeline stands a real database up so the middle tier runs instead of skipping.

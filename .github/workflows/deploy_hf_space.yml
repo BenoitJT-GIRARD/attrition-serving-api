@@ -2,11 +2,10 @@ name: Deploy
 
 # Only from `main`, and only after CI is green on the same commit. The deploy job used to
 # repeat the whole test job inline, so a change to one could silently diverge from the other.
+# Frozen on 2026-09-18. The workflows below ran green on the commit this repository
+# publishes, and the Actions tab holds that run. They fire by hand from now on: a
+# repository nobody maintains should not go red on a dependency that moved.
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: ["main"]
-    types: [completed]
   workflow_dispatch:
 
 jobs:
