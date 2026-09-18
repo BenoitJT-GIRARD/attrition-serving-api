@@ -1,9 +1,7 @@
 name: CI
 
 # No `schedule` trigger: this workflow runs on code changes, and at no other time.
-# Frozen on 2026-09-18. The workflows below ran green on the commit this repository
-# publishes, and the Actions tab holds that run. They fire by hand from now on: a
-# repository nobody maintains should not go red on a dependency that moved.
+# Manual only, from 2026-09-18 onward: the evidence run predates this change.
 on:
   workflow_dispatch:
 
