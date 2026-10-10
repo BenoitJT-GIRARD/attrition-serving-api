@@ -14,7 +14,7 @@
       "sha256": "33ea4d24d75fb590ad5e732e70c990aace6c4a3c514b0536f4be06c57d69bbcb",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-16"
+      "written": "2026-10-10"
     },
     "cost_curve.png": {
       "axes": [
@@ -30,7 +30,7 @@
       "sha256": "e587a8e0bf7c4d4906c8442f028c02efda0a27be0e0ebc7c7c70d0835c34b2ba",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-16"
+      "written": "2026-10-10"
     },
     "permutation_importance.png": {
       "axes": [
@@ -46,7 +46,7 @@
       "sha256": "0bc9f575ce0bf76a65c48134cd1b9c1ccd459b91c0f7fa38e326dbed72fce88c",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-16"
+      "written": "2026-10-10"
     },
     "pr_curves.png": {
       "axes": [
@@ -62,7 +62,7 @@
       "sha256": "ad7196e1e30fb45daa57878a0678ad382221bf891a45eb66507f18826508da12",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-16"
+      "written": "2026-10-10"
     },
     "subgroups.png": {
       "axes": [
@@ -78,7 +78,7 @@
       "sha256": "258b0442915bc63b9789eb45a8f67ccaa5f9be8a624fd73d333f9a079c8b9280",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-09-16"
+      "written": "2026-10-10"
     }
   },
   "schema": "image-manifest/1"
