@@ -112,6 +112,11 @@ deployment target inject their own values.
 copy, so it is deliberately silent about the threshold: overriding the model card's operating
 point has to be a decision, not an inheritance.
 
+No third party issues any of the three: whoever runs the service chooses them. A long random
+string does for `API_KEY` and `ANONYMIZATION_KEY` (`python -c "import secrets; print(secrets.token_hex(32))"`), and
+`DATABASE_URL` comes from the database, local or managed. Choose `ANONYMIZATION_KEY` once and
+keep it: a new key gives every employee a new anonymised id.
+
 ### What is not protected
 
 - **No rate limiting.** A valid key can be used as fast as the service answers.
