@@ -66,8 +66,8 @@ somebody who was staying anyway. The protocol prices the whole range.
 | 13 conversations | 0.065 | 53 % | 87 % | 0.27 |
 | 20 conversations | 0.052 | 64 % | 91 % | 0.24 |
 | 30 conversations | 0.021 | 98 % | 100 % | 0.16 |
-n = 7 350, so every share above is a share of 7 350 scored rows over 25 folds.
-`reports/cost_curve.csv` carries the eight ratios with the fold-to-fold spread of each.
+> n = 7 350, so every share above is a share of 7 350 scored rows over 25 folds.
+> `reports/cost_curve.csv` carries the eight ratios with the fold-to-fold spread of each.
 
 > **How to read it.** Each row is one answer to the question in the first column, and the rest
 > of the row is what that answer costs. The threshold is the score at or above which the service
