@@ -42,6 +42,8 @@ dev = [
     # one machine and fails on the next is worse than no lint at all.
     "ruff>=0.16.6",
     "httpx>=0.28.1",
+    # The test client of starlette 1.x is built on httpx2, and warns if only httpx is there.
+    "httpx2>=2.13.1",
     # scripts/capture.py drives Swagger through a real browser: the response panel only
     # exists after the request has run, and Chrome's virtual clock does not wait for it.
     "playwright>=1.47.0",
