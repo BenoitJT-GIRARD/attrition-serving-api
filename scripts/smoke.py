@@ -139,7 +139,10 @@ def reproduced() -> list[str]:
         if not _git("ls-files", "--error-unmatch", rel):
             problems.append(f"{rel} — produced but not tracked by git")
             continue
-        if _git("status", "--porcelain", "--", rel):
+        # Compared as the repository stores it. On Windows, pandas and `open()` write CRLF,
+        # `.gitattributes` turns it back into LF on commit, and `git status` calls such a file
+        # changed although its committed form would be byte for byte the same.
+        if _git("diff", "--name-only", "HEAD", "--", rel):
             problems.append(f"{rel} — differs from the committed version")
     return problems
 
