@@ -75,8 +75,10 @@ the request fixtures are all things an operator does from a checkout. It runs as
 `HEALTHCHECK` calls `/health`, chosen because it needs neither the artefact nor the database:
 an orchestrator gets an answer that means the process is alive and nothing more.
 
-The hosted deployment this was built for has been decommissioned, along with the managed
-database it wrote to. `docker compose up` brings the local equivalent back.
+The image listens on 7860 and runs as uid 1000, which is what a Hugging Face Docker Space
+expects: a Space whose card declares `sdk: docker` and `app_port: 7860` builds this
+Dockerfile as it is, with `API_KEY`, `DATABASE_URL` and `MODEL_VERSION` set as the Space's
+secrets. `docker compose up` runs the same service locally, with its own database.
 
 A managed PostgreSQL usually wants TLS:
 
