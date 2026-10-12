@@ -113,9 +113,10 @@ threshold and the model version that produced it. Without a database these tests
 skip message is the command that would start one. The connect timeout is why skipping takes
 three seconds instead of the four and a half minutes it once did.
 
-The system tier starts the service in its own process, scores a hundred fixtures through HTTP,
-and checks the observed alert rate against the fold interval the protocol published. It answers
-"does the product do what the README says", which no unit test can.
+The system tier starts the service in its own process, scores a hundred payloads built from the
+ten fixtures through HTTP, and checks the observed alert rate against the fold interval the
+protocol published. It answers "does the product do what the README says", which no unit test
+can.
 
 Coverage is measured on every run with a floor in `pyproject.toml`. The floor is a
 ratchet: it goes up when the suite grows and never down.

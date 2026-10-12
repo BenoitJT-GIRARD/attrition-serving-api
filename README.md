@@ -149,7 +149,7 @@ corrects that gap or makes a claim about it; [`docs/protocol.md`](docs/protocol.
 eight rows with the events behind each.
 
 <!-- source: reports/figures/MANIFEST.json -->
-![Permutation importance of the fifteen largest features, average precision lost when a column is shuffled, with one standard deviation across the 25 folds, n = 7350 scored rows](reports/figures/permutation_importance.png)
+![Permutation importance of the fifteen largest features, average precision lost when a column is shuffled, with one point per fold and a standard-error bar over the 25 folds, n = 7350 scored rows](reports/figures/permutation_importance.png)
 
 > **How to read it.** Each row is one column of the dataset. Its value is measured by
 > scrambling that column at random and watching how much ranking quality the model loses, so a
@@ -170,11 +170,11 @@ what it *claimed* and not in what it computed, and a passing test suite does not
 kind of defect.
 
 The service decided at a threshold nothing documented, because the settings module read one key
-name and the export wrote another; it fell back to 0.5 and found two thirds of what its own
-documentation promised. The threshold was chosen on the test set. Everything rested on 24
-events in a 90/10 split. Three files gave three different numbers, one of them produced by no
-code in the repository. The score served as a probability did not match the observed departure
-rates. And the API required five fields it never read.
+name and the export wrote another; it fell back to 0.5 and found three quarters of what its own
+documentation promised. The threshold was chosen on the test set. Everything rested on 24 events
+in a 90/10 split. Three files gave three different numbers, one of them produced by no code in
+the repository. The score served as a probability did not match the observed departure rates.
+And the API required five fields it never read.
 
 [`docs/protocol.md`](docs/protocol.md#the-six-things-that-were-wrong) gives each one with what
 it was worth, measured both ways round, so each correction can be checked.

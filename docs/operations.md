@@ -213,4 +213,4 @@ caller's failed request is found by that id and not by timestamp.
 
 ### 7. Starting from nothing
 
-The five commands at the top of this page, in that order.
+The six commands at the top of this page, in that order.

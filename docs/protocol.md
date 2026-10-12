@@ -125,8 +125,9 @@ list tracks where departures happen.
 
 Recall does not. Twenty-three points separate the two extreme marital statuses, which on a
 retention programme means one group is served better than another for reasons the model was
-never asked about. The HR row rests on about twelve events out of 315 scored rows: one employee
-moves it by eight points, and it should be read as a count rather than as a rate.
+never asked about. The HR row rests on twelve leavers among 63 employees, each scored five times
+(60 events in 315 scored rows): one employee moves it by eight points, and it should be read as
+a count rather than as a rate.
 
 `reports/subgroups.csv` carries the same table, with the same labels: the translation from
 the extracts' French happens in `protocol.py`, so the CSV a reader opens to check this page
@@ -161,16 +162,17 @@ tells you to copy, set 0.5 as well.
 <!-- source: ../reports/evaluation_summary.json -->
 On the n = 147 rows of the split that was published then, **24 of them leavers**, the
 service at 0.5 found fifteen and missed nine; the threshold the model card declared would
-have found twenty and missed four. Because of one key name, the deployed service found two
-thirds of what its own documentation promised.
-A missing threshold is now an error: `tests/unit/test_served_threshold_matches_artifact.py`
-loads the artefact, calls the service, and fails when the two disagree.
+have found twenty and missed four. Because of one key name, the deployed service found three
+quarters of what its own documentation promised. A missing threshold is now an error:
+`tests/unit/test_served_threshold_matches_artifact.py` loads the artefact, calls the service,
+and fails when the two disagree.
 
 **The threshold was chosen on the test set.** `find_threshold_for_recall(y_test, p_test,
 target_recall=0.80)` set the threshold to whatever gave a recall of 0.80 on the same 147 rows
 that then reported that recall, so the recall held by construction. It is now chosen inside each
-fold. The optimism that removes is +0.007 of recall on the shipped arm: the leak was real, and
-its effect on the point estimate was not large.
+fold. The optimism that removes is +0.007 of recall on the raw scores and +0.060 on the
+recalibrated scores the service ships: the leak was real, and on the shipped model it was worth
+six points of recall.
 
 <!-- source: ../reports/evaluation_summary.json -->
 **Everything rested on 24 events**, n = 147 test rows. The split was 90/10, 24 of them leavers.

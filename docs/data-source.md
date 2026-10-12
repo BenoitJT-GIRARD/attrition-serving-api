@@ -14,7 +14,7 @@ is public and the correspondence below is complete.
 |---|---|
 | Rows | 1 470, one per employee |
 | Departures | 237, a base rate of 0.1612 |
-| Columns the extracts carry | 34 of IBM's 37 |
+| Columns the extracts carry | 34, covering 32 of IBM's 35 (`EmployeeNumber` appears in all three) |
 | Columns IBM ships and the extracts drop | `DailyRate`, `HourlyRate`, `MonthlyRate` |
 | Constant columns kept | `nombre_heures_travailless` = 80, `ayant_enfants` = `Y`, `nombre_employee_sous_responsabilite` = 1 |
 
@@ -76,9 +76,9 @@ replay it.
 | `heure_supplementaires` | `OverTime` | Oui ← Yes (416), Non ← No (1 054) |
 | `augementation_salaire_precedente` | `PercentSalaryHike` | rendered `"11 %"` … `"25 %"` |
 
-The six 1-to-4 columns are told apart by their distributions, which is the only way: IBM ships
-five of them with the same range. `JobInvolvement` and `WorkLifeBalance` are the two skewed
-ones (83 / 375 / 868 / 144 and 80 / 344 / 893 / 153); the three satisfaction scales are flat.
+The five 1-to-4 columns are told apart by their distributions, which is the only way: all five
+share the same range. `JobInvolvement` and `WorkLifeBalance` are the two skewed ones (83 / 375 /
+868 / 144 and 80 / 344 / 893 / 153); the three satisfaction scales are flat.
 
 ### `extrait_sondage.csv` — the internal survey
 
