@@ -55,10 +55,10 @@ best-effort basis: the route answers whether or not the log accepts the row, so
 
 ### What each error code means
 
-- `401` — the `X-API-Key` header is missing, or does not match.
-- `422` — the JSON is malformed, or the payload is not wrapped under `features`. The body
+- `401`: the `X-API-Key` header is missing, or does not match.
+- `422`: the JSON is malformed, or the payload is not wrapped under `features`. The body
   names every field it is missing, not one per round trip.
-- `500` — the model artefact is missing, or the service was asked for an employee the
+- `500`: the model artefact is missing, or the service was asked for an employee the
   database cannot be read for. A decision log that is down does not produce one: the write
   is best-effort, and the answer says `stored: false`.
 
@@ -88,15 +88,15 @@ DATABASE_URL=postgresql+psycopg://postgres:<password>@db.<ref>.<host>:5432/postg
 
 ## The pipeline
 
-Started by hand from the Actions tab: `uv sync --frozen`, `ruff check`, `ruff format --check`,
-`bandit -c pyproject.toml`, then `pytest` against a real PostgreSQL service container, so the
+The pipeline is started by hand from the Actions tab and runs `uv sync --frozen`, `ruff check`,
+`ruff format --check`, `bandit -c pyproject.toml`, then `pytest` against a real PostgreSQL service container, so the
 integration tier runs instead of skipping. `SKIP_DOTENV=1` is set, so a stray `.env` on a
 runner cannot change what the tests read.
 
 `MODEL_VERSION` is written into every row of `predictions`: `v1.0.0` on a tagged release,
 `main-<sha>` in CI. Together with `threshold`, also logged per row, that is what makes a past
 decision explainable. Rolling back means redeploying a previous tag and keeping
-`MODEL_VERSION` consistent with it — a rollback that leaves the version string behind makes
+`MODEL_VERSION` consistent with it. A rollback that leaves the version string behind makes
 the log say the wrong thing about every row it writes afterwards.
 
 ## Secrets
@@ -111,8 +111,8 @@ deployment target inject their own values.
 | `ANONYMIZATION_KEY` | the HMAC key: an anonymised employee id becomes reversible by trying candidates |
 
 `.env.example` carries the names and no values. It is also the file the setup tells you to
-copy, so it is deliberately silent about the threshold: overriding the model card's operating
-point has to be a decision, not an inheritance.
+copy, so it is deliberately silent about the threshold, and copying it never overrides the
+model card's operating point. Overriding that point has to be an explicit decision.
 
 No third party issues any of the three: whoever runs the service chooses them. A long random
 string does for `API_KEY` and `ANONYMIZATION_KEY` (`python -c "import secrets; print(secrets.token_hex(32))"`), and
@@ -121,17 +121,17 @@ keep it: a new key gives every employee a new anonymised id.
 
 ### What is not protected
 
-- **No rate limiting.** A valid key can be used as fast as the service answers.
-- **No TLS locally.** `docker compose` serves plain HTTP, and the header carrying the key is
+- No rate limiting. A valid key can be used as fast as the service answers.
+- No TLS locally. `docker compose` serves plain HTTP, and the header carrying the key is
   in clear on the wire.
-- **No key rotation.** One key, changed by hand.
-- **No audit of reads.** `/history` returns decisions and records nothing about having done so.
-- **No per-caller identity.** The log says what was decided, never by whom.
+- No key rotation. One key, changed by hand.
+- No audit of reads. `/history` returns decisions and records nothing about having done so.
+- No per-caller identity. The log says what was decided, never by whom.
 
 None of these matter for an archived demonstration. All of them would have to be answered
 before anything like it went near a real HR system.
 
-The decision log holds the same personal fields the request did — age, department, job title,
+The decision log holds the same personal fields the request did: age, department, job title,
 salary, marital status, tenure. On this dataset those fields describe nobody
 ([`data-source.md`](data-source.md)), but the table would fall under the same handling rules
 as its source the day it held a real extract, and treating it as ordinary application logging
@@ -139,7 +139,7 @@ would be a mistake.
 
 ## When it answers badly
 
-In order. Each step gives a verdict or hands you to the next.
+Work through the steps in order. Each step gives a verdict or hands you to the next.
 
 ### 1. Is it up, or up and wrong?
 
@@ -152,7 +152,7 @@ the logs.
 
 ### 2. Does it decide at the threshold it claims?
 
-This is the failure that once shipped, so it comes second and not last.
+This is the failure that once shipped, which is why it is checked second.
 
 ```bash
 curl -s localhost:8000/predict -H "X-API-Key: $API_KEY" \
@@ -172,7 +172,7 @@ without a running service.
 `proba_depart` is calibrated: 0.1 means about one departure in ten. The model was scored at a
 mean predicted risk of 0.163 against a base rate of 0.161
 (`reports/evaluation_summary.json`). A mean well away from that says the traffic is not the
-population the model was fitted on — which is the drift signal nothing here watches, and the
+population the model was fitted on. That is the drift signal nothing here watches, and the
 earliest one available, since it arrives long before any label does.
 
 If the *decision* looks wrong while the probability looks right, it is the threshold, and step

@@ -1,12 +1,12 @@
 # Where the data comes from
 
-The three files under `data/raw/` are one public dataset, cut in three: IBM's **HR Analytics
-Employee Attrition & Performance**, a sample dataset IBM's own data scientists generated and
-published. The rows are fictional. No person is described by any of them.
+The three files under `data/raw/` are one public dataset, cut in three: IBM's *HR Analytics
+Employee Attrition & Performance*, a sample dataset IBM's own data scientists generated and
+published. The rows are fictional, and none of them describes a person.
 
-That matters twice. It is the reason nothing here needs to be protected from a reader, and it
-is the reason every number this repository publishes can be checked by someone who has never
-seen the extracts: the upstream file is public, and the correspondence below is complete.
+As a result, nothing here needs to be protected from a reader, and someone who has never seen
+the extracts can still check every number this repository publishes, since the upstream file
+is public and the correspondence below is complete.
 
 ## What identifies it
 
@@ -19,8 +19,8 @@ seen the extracts: the upstream file is public, and the correspondence below is 
 | Constant columns kept | `nombre_heures_travailless` = 80, `ayant_enfants` = `Y`, `nombre_employee_sous_responsabilite` = 1 |
 
 Those three constants are the fingerprint. IBM's file carries `StandardHours` = 80, `Over18` =
-`Y` and `EmployeeCount` = 1 for every one of its 1 470 rows, and nothing else in the public
-HR-dataset landscape carries that trio at that row count.
+`Y` and `EmployeeCount` = 1 for every one of its 1 470 rows, and no other public HR dataset
+carries that trio at that row count.
 
 `uv run python scripts/build_extracts.py --check` replays the whole signature, every range and
 every value count in the table below, against whatever sits in `data/raw/`, and names the
@@ -30,18 +30,18 @@ column that disagrees. Run it before quoting a number.
 
 The extracts are a repackaging of the dataset: the columns were renamed into French and the
 categories re-themed as a consulting firm. `Research & Development` became `Consulting`,
-`Life Sciences` became `Infra & Cloud`, and `Sales Executive` became `Cadre Commercial`. Nothing was resampled or perturbed — the value
+`Life Sciences` became `Infra & Cloud`, and `Sales Executive` became `Cadre Commercial`. Nothing was resampled or perturbed: the value
 counts are IBM's, to the row.
 
-Two of the French names are worth a warning, because they say something the column does not.
+Two of the French names suggest something the column does not hold.
 `nombre_employee_sous_responsabilite` reads as "employees managed" and is `EmployeeCount`, a
 constant 1. `nombre_heures_travailless` reads as hours worked and is `StandardHours`, a
 constant 80. Both are dropped before the model sees anything.
 
 ## The correspondence, column by column
 
-Established by matching each column's range and, for categorical columns, its exact value
-counts. `src/attrition_serving/data/source.py` carries the table in code, and the unit tests
+The correspondence was established by matching each column's range and, for categorical
+columns, its exact value counts. `src/attrition_serving/data/source.py` carries the table in code, and the unit tests
 replay it.
 
 ### `extrait_sirh.csv` — contract and demographics
@@ -119,9 +119,9 @@ The three files are joined on the employee: `id_employee`, `eval_number` and `co
 are the same number in three spellings. The identifier is then replaced by an HMAC-SHA256
 digest keyed from the environment.
 
-That anonymisation is a **demonstration, not a protection**: the rows are fictional, so there
-is nothing to protect. It is kept because the plain digest of a small, enumerable identifier
-space is reversible by trying every number, and showing the keyed version is the point.
+That anonymisation is there as a demonstration: the rows are fictional, so there is nothing
+to protect. It is kept because the plain digest of a small, enumerable identifier space is
+reversible by trying every number, and the point is to show the keyed version.
 `docs/operations.md` says where the key lives.
 
 ## The licence

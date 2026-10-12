@@ -32,8 +32,8 @@ Set the line high and the list is short and mostly right, and most of the people
 not on it. Set it low and you catch nearly everyone, on a list so long that no HR team works
 through it.
 
-So this repository is built around two questions a model alone does not answer. **At what
-threshold should it decide, and who can check that it decided there?**
+This repository is built around two questions a model does not answer by itself: at what
+threshold it should decide, and who can check that it decided there.
 
 The data is 1 470 employees, joined on the employee from three extracts: contract and
 demographics, annual reviews, an internal survey. 237 of them left, a base rate of 16 %. That imbalance
@@ -47,9 +47,9 @@ scores a full feature payload, `/predict_by_id` scores an employee already in th
 `/history` returns what was decided and when.
 
 Every prediction writes a row to PostgreSQL: the probability, the threshold that turned it into
-a decision, and the version of the model that produced it. That is the part worth looking at. A
-probability on its own does not let anyone reconstruct, six months later, why a particular
-person was flagged. Churn prediction is exactly the kind of decision that gets questioned
+a decision, and the version of the model that produced it. That log is the part worth looking
+at, because a probability on its own does not let anyone reconstruct, six months later, why a
+particular person was flagged. A churn prediction is the kind of decision that gets questioned
 six months later, by someone who was not in the room.
 
 <!-- source: docs/images/MANIFEST.json -->
@@ -76,7 +76,7 @@ exploratory runs. Neither is on the serving path, and the image installs neither
 served is one frozen artefact and the code that reads it.
 
 The tooling around it: **uv** locks the environment, **Ruff** and **Bandit** gate the pipeline,
-and **pytest** is split by tier — the last of which boots the service as its own process and
+and **pytest** is split into tiers, the last of which boots the service as its own process and
 sends it a hundred payloads over HTTP. **Docker** builds the image, and the **GitHub Actions**
 pipeline stands a real database up so the middle tier runs instead of skipping.
 
@@ -93,7 +93,7 @@ pipeline stands a real database up so the middle tier runs instead of skipping.
 > repeats.
 
 <!-- source: reports/evaluation_summary.json -->
-Twenty-five folds, 7 350 scored rows, 1 185 departures. **Average precision is 0.607 ± 0.058**,
+Twenty-five folds give 7 350 scored rows and 1 185 departures. **Average precision is 0.607 ± 0.058**,
 n = 7 350, where a model that learns nothing scores 0.161. The `±` is the fold-to-fold standard
 deviation; [`docs/protocol.md`](docs/protocol.md) defines every name on this page and says how
 the folds are built.
@@ -103,33 +103,33 @@ the folds are built.
 
 > **How to read it.** The scored employees are sorted by the risk they were given and cut into
 > ten groups of equal size. For each group, the horizontal axis is the risk the model promised
-> and the vertical axis is the share who actually left. A group sitting on the diagonal got a
-> promise worth keeping. The olive line falls far below it, so a raw score ranks employees
-> without measuring anything. Isotonic recalibration, a monotone rescaling fitted after
+> and the vertical axis is the share who actually left. A group on the diagonal left at the
+> rate the model predicted. The olive line falls far below it: a raw score ranks employees but
+> does not measure their risk. Isotonic recalibration, a monotone rescaling fitted after
 > training, puts both arms back onto the diagonal.
 
 <!-- source: reports/evaluation_summary.json -->
-The scores that ship are not those. Raw, **the model predicted an average risk of 0.375 where
-0.161 of employees left**, over the same n = 7 350 rows: it ranked well and its numbers meant
-nothing. Recalibration fixes the scale at a cost, 0.607 of average precision down to 0.569, and
-the reliability curve above is what that bought.
+The service does not ship the raw scores. Before recalibration, **the model predicted an average risk of 0.375 where
+0.161 of employees left**, over the same n = 7 350 rows: it ranked well, but its values could
+not be read as probabilities. Recalibration fixes the scale, as the reliability
+curve above shows, at a cost in average precision, from 0.607 down to 0.569.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![The cost curve: departures caught, employees flagged and precision at eight cost ratios, with the shipped ratio marked, n = 7350 scored rows over 25 folds](reports/figures/cost_curve.png)
 
 > **How to read it.** The horizontal axis is the one assumption an employer has to make: how
-> many pointless conversations a single missed departure is worth. Each column prices that
-> choice. Reading up a column gives the share of departures the list catches, the share of
-> employees it puts on the list, and the share of that list who really leave. Accepting a higher
-> ratio catches more departures and lengthens the list, and the dashed marker is the ratio this
-> service ships.
+> many pointless conversations a single missed departure is worth. Reading up a column gives
+> what that choice costs: the share of departures the list catches, the share of employees it
+> puts on the list, and the share of that list who really leave. Accepting a higher ratio
+> catches more departures and lengthens the list. The dashed marker is the ratio this service
+> ships.
 
 <!-- source: reports/cost_curve.csv -->
 **The shipped operating point is a threshold of 0.111**, over n = 7 350 scored rows: 37 % of
 employees on the list, 78 % of the departures caught. It minimises expected cost when one
-missed departure is worth eight wasted conversations, which is a hypothesis and not a
-measurement — the curve prices the seven other ratios, and an employer arriving with their own
-reads the line they need.
+missed departure is worth eight wasted conversations, and that ratio is a hypothesis. The curve
+also prices the seven other ratios, so an employer with their own ratio can read off the
+threshold it calls for.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![Recall per subgroup at the shipped threshold, with a 95 % Wilson interval and the group size on each bar, n = 7350 scored rows](reports/figures/subgroups.png)
@@ -142,11 +142,11 @@ reads the line they need.
 > whiskers fail to overlap.
 
 <!-- source: reports/subgroups.csv -->
-Each group is alerted on at about twice the rate at which it leaves, so the list does not
-concentrate anywhere the departures do not. Recall is the uneven column: **86 % of departures
-found among single employees, 63 % among married ones**, over n = 7 350 scored rows. Nothing is
-corrected and nothing is claimed; [`docs/protocol.md`](docs/protocol.md) gives the eight rows
-with the events behind each.
+Each group is alerted on at about twice the rate at which it leaves, so no group is
+over-represented on the list relative to its departures. Recall is the uneven column: **86 % of departures
+found among single employees, 63 % among married ones**, over n = 7 350 scored rows. Nothing here
+corrects that gap or makes a claim about it; [`docs/protocol.md`](docs/protocol.md) gives the
+eight rows with the events behind each.
 
 <!-- source: reports/figures/MANIFEST.json -->
 ![Permutation importance of the fifteen largest features, average precision lost when a column is shuffled, with one standard deviation across the 25 folds, n = 7350 scored rows](reports/figures/permutation_importance.png)
@@ -155,29 +155,29 @@ with the events behind each.
 > scrambling that column at random and watching how much ranking quality the model loses, so a
 > long row means the model leaned on it heavily. Every dot is one fold of the cross-validation,
 > the rule is their mean, and the bar is the standard error of that mean. The column names are
-> the French ones the dataset ships with. A heavy row says the model uses the column, and
-> nothing about cause.
+> the French ones the dataset ships with. A heavy row shows that the model uses the column; it
+> says nothing about cause.
 
 <!-- source: reports/permutation_importance.csv -->
 Shuffling one column costs far more than any other: **overtime is worth 0.193 ± 0.026 of
 average precision**, over n = 7 350 scored rows and 25 folds, where the next feature is worth
-0.088. The column names are the dataset's own, and `docs/data-source.md` translates them.
+0.088. `docs/data-source.md` translates the column names.
 
 ## Why these numbers can be believed
 
-They are not the figures this repository published first. Six things were wrong, all six in
-what it *claimed* and not in what it computed — the kind of defect a passing test suite does
-not catch.
+The repository first published different figures. Six things were wrong, all six in
+what it *claimed* and not in what it computed, and a passing test suite does not catch that
+kind of defect.
 
 The service decided at a threshold nothing documented, because the settings module read one key
 name and the export wrote another; it fell back to 0.5 and found two thirds of what its own
 documentation promised. The threshold was chosen on the test set. Everything rested on 24
 events in a 90/10 split. Three files gave three different numbers, one of them produced by no
-code in the repository. The probability was not a probability. And the API required five fields
-it never read.
+code in the repository. The score served as a probability did not match the observed departure
+rates. And the API required five fields it never read.
 
 [`docs/protocol.md`](docs/protocol.md#the-six-things-that-were-wrong) gives each one with what
-it was worth, measured both ways round. A correction nobody can check is a claim.
+it was worth, measured both ways round, so each correction can be checked.
 
 ## Running it
 
@@ -248,12 +248,12 @@ interval around each number; it adds no information the rows do not hold. Nothin
 0.058 fold-to-fold spread can be distinguished here, which is why no search over hyper-parameters
 and no boosted trees appear.
 
-**Eight conversations per missed departure is a hypothesis.** The threshold inherits exactly as
-much justification as that figure has, and no more.
+**Eight conversations per missed departure is a hypothesis.** The threshold is only as well
+justified as that figure.
 
 **No causal claim.** A column that tells the two groups apart may be downstream of the decision
 to leave: someone on their way out stops asking for training. A single cross-section cannot
-separate the two, and a ranking of risk is not a list of levers.
+separate the two, and the risk ranking does not say what would make anyone stay.
 
 **The subgroup table is a description.** It records a recall gap between two marital statuses.
 It does not say where the gap comes from, and nothing in the repository closes it.
@@ -272,5 +272,5 @@ redistributed here. [`docs/data-source.md`](docs/data-source.md) proves the corr
 column by column, and `scripts/build_extracts.py` rebuilds them from the public upstream.
 
 `tests/fixtures/` holds ten rows in request shape for the API tests. Employee identifiers are
-anonymised with HMAC-SHA256 under a key from the environment — a demonstration of the practice,
-not a protection, since there is nobody to protect.
+anonymised with HMAC-SHA256 under a key from the environment. The data describes nobody, so
+this demonstrates the practice without protecting anyone.

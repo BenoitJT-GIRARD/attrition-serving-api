@@ -8,21 +8,21 @@ corrections it forced were worth in numbers.
 
 ## What a run does
 
-`uv run python scripts/run_evaluation.py` — a few minutes, no GPU. Stratified five-fold
-cross-validation, repeated under five splitting seeds, over the whole table: each of the 1 470
-employees is therefore scored five separate times, always by a model fitted without them. The
-totals are 7 350 scored rows and 1 185 departures.
+`uv run python scripts/run_evaluation.py` takes a few minutes and needs no GPU. It runs
+stratified five-fold cross-validation, repeated under five splitting seeds, over the whole
+table, so each of the 1 470 employees is scored five separate times, always by a model fitted
+without them. The totals are 7 350 scored rows and 1 185 departures.
 
 Inside each fold, in this order:
 
-1. a quarter of the training part is held out as an **inner validation split**;
+1. a quarter of the training part is held out as an inner validation split;
 2. the model is fitted on the rest;
 3. the recalibration, when the arm uses one, is fitted without the scoring fold;
-4. the **threshold** is read off the inner validation split;
+4. the threshold is read off the inner validation split;
 5. the scoring fold is scored once, with that threshold, and never looked at again.
 
 No decision is taken with the scoring fold in view: the threshold, the recalibration and the
-subgroup boundaries are all settled before it is opened. Everything else in this module is
+subgroup boundaries are all settled before it is opened. The rest of this module is
 bookkeeping around that one rule.
 
 ## The three arms
@@ -42,18 +42,18 @@ n = 7 350 scored rows, 1 185 departures, over 25 folds. `±` is the standard dev
 folds. The base rate is 0.161.
 
 The 0.038 of average precision lost between the first row and the third is real, and a comment
-in this repository once argued it was impossible because a monotone map preserves order. The
-argument fails on one word: isotonic regression is a *step*, so distinct scores collapse onto a
-shared value, and average precision charges for every tie thus created. ROC AUC moves by 0.003,
+in this repository once argued it was impossible because a monotone map preserves order. That
+argument misses that isotonic regression is a *step* function: distinct scores collapse onto a
+shared value, and average precision charges for every tie this creates. ROC AUC moves by 0.003,
 which is the signature of an ordering left intact. Cross-fitting the calibrator over the whole
 training fold rather than one quarter of it returns about a third of the loss, and the shipped
 arm is the one that does.
 
 ## The threshold is a cost decision
 
-Ranking is one thing and deciding is another. Where the alert list stops depends on a price the
-model has no access to: what losing somebody costs, against an hour of a manager's time spent on
-somebody who was staying anyway. The protocol prices the whole range.
+Where the alert list stops depends on a price the model has no access to: what losing
+somebody costs, against an hour of a manager's time spent on somebody who was staying anyway.
+The protocol prices the whole range.
 
 <!-- source: ../reports/cost_curve.csv -->
 | a missed departure is worth… | threshold | alert rate | recall | precision |
@@ -83,16 +83,16 @@ programme can act on it.
 
 `metrics.yaml` at the repository root carries the definition of each one. In short:
 
-- **Average precision** — the area under the precision-recall curve. On a problem with a
+- Average precision is the area under the precision-recall curve. On a problem with a
   16 % base rate, a model that learns nothing scores 0.161, so the number is read against
-  that, not against zero.
-- **ROC AUC** — how well the model orders employees, insensitive to where the threshold sits.
-  It is here to separate *ordering* from *scale*, which is what the calibration rows turn on.
-- **Calibration error** — the expected calibration error over equal-population bins: the gap
-  between a predicted 0.3 and the share of that bin who actually left. Equal-population and
-  not equal-width, because the scores pile up near zero.
-- **Alert rate** — the share of employees the service flags at the shipped threshold.
-- **Recall optimism** — the recall obtained on the inner validation split minus the recall
+  that baseline, not against zero.
+- ROC AUC measures how well the model orders employees, whatever the threshold. It is here to
+  separate *ordering* from *scale*, which is what the calibration rows turn on.
+- Calibration error is the expected calibration error over equal-population bins: the gap
+  between a predicted 0.3 and the share of that bin who actually left. The bins hold equal
+  populations, not equal widths, because the scores pile up near zero.
+- Alert rate is the share of employees the service flags at the shipped threshold.
+- Recall optimism is the recall obtained on the inner validation split minus the recall
   obtained on the scoring fold. It is the price of choosing a threshold on the data that then
   measures it, and it is published because the previous version of this repository paid it
   without saying so.
@@ -118,10 +118,10 @@ The same model, at the shipped threshold, by attribute.
 > measured and not predicted. The alert rate is the share of the group the service puts on the
 > list, and recall is the share of the group's own departures the list catches. A group alerted
 > on at roughly twice its base rate is being handled like every other; the recall column is
-> where the groups genuinely separate.
+> where the groups differ.
 
 The ratio of alert rate to base rate stays between 2.0 and 2.6 across the eight rows, so the
-list tracks where departures actually happen.
+list tracks where departures happen.
 
 Recall does not. Twenty-three points separate the two extreme marital statuses, which on a
 retention programme means one group is served better than another for reasons the model was
@@ -144,34 +144,33 @@ says what this page says.
 n = 7 350 scored rows over 25 folds, same protocol for all three.
 
 The forest loses by 0.076 of average precision with overlapping intervals, so the comparison
-settles nothing about the families and everything about the size of the dataset. The linear
-model is kept for a reason the score does not carry: a manager sent to talk to a named person
-can be shown the coefficients that produced the alert.
+says nothing about the model families, only that the dataset is too small to separate them.
+The linear model is kept for a reason other than its score: a manager sent to talk to a named
+person can be shown the coefficients that produced the alert.
 
 ## The six things that were wrong
 
-None of them were in what the code computed. All six were in what the repository *claimed*,
-which is the kind of defect that survives a passing test suite.
+All six were in what the repository *claimed*, not in what the code computed, and that kind of
+defect survives a passing test suite.
 
 **The service decided at a threshold nothing documented.** The settings module read
 `model_card["threshold_default"]`; the export script writes `default_threshold`. The lookup
-missed on every request and fell back to 0.5 — and `.env.example`, the file the documentation
+missed on every request and fell back to 0.5, and `.env.example`, the file the documentation
 tells you to copy, set 0.5 as well.
 
 <!-- source: ../reports/evaluation_summary.json -->
 On the n = 147 rows of the split that was published then, **24 of them leavers**, the
 service at 0.5 found fifteen and missed nine; the threshold the model card declared would
-have found twenty and missed four. A key name, and the deployed service found two thirds
-of what its own documentation promised.
+have found twenty and missed four. Because of one key name, the deployed service found two
+thirds of what its own documentation promised.
 A missing threshold is now an error: `tests/unit/test_served_threshold_matches_artifact.py`
 loads the artefact, calls the service, and fails when the two disagree.
 
 **The threshold was chosen on the test set.** `find_threshold_for_recall(y_test, p_test,
-target_recall=0.80)` — the recall of 0.80 was not a property of the model, it was the
-definition of the threshold, measured on the same 147 rows that reported it. It is now chosen
-inside each fold. The optimism that removes is +0.007 of recall on the shipped arm: the leak
-was real, and its effect on the point estimate was not large. Saying so is worth more than
-implying it was.
+target_recall=0.80)` set the threshold to whatever gave a recall of 0.80 on the same 147 rows
+that then reported that recall, so the recall held by construction. It is now chosen inside each
+fold. The optimism that removes is +0.007 of recall on the shipped arm: the leak was real, and
+its effect on the point estimate was not large.
 
 <!-- source: ../reports/evaluation_summary.json -->
 **Everything rested on 24 events**, n = 147 test rows. The split was 90/10, 24 of them leavers.
@@ -180,26 +179,26 @@ recall spans [0.667, 0.962]. "Recall = 0.80" was indistinguishable from 0.70 and
 and the repository published four decimals on it.
 
 <!-- source: ../reports/evaluation_summary.json -->
-Twenty-five folds over the full n = 1 470 rows replaced it, and the correction went the
-direction nobody expects: the old split's 0.546 sits **below 0.84 of the folds**. The
-repository had been quoting one of its unluckiest draws.
+Twenty-five folds over the full n = 1 470 rows replaced it, and the correction went against
+the usual direction: the old split's 0.546 sits **below 0.84 of the folds**, so the repository
+had been quoting one of its unluckiest draws.
 
 **Three files gave three different numbers**, and one of them was produced by no code in the
-repository at all. It is deleted. `scripts/run_evaluation.py` writes every published table
+repository at all. That file is deleted. `scripts/run_evaluation.py` writes every published table
 now, and `models/model_card.json` cites it.
 
 **The probability was not a probability.** In the bin where the model predicted 0.57, the
-observed departure rate was 0.17. The three arms above are what replaced the single number.
+observed departure rate was 0.17. The three arms above replaced the single number.
 
 **The API required five fields it never read.** The feature contract was built from every
-column of the training frame. A caller therefore had to supply the anonymised identifier and
-the two join keys, none of which reach the model. One of the five was
-the previous pay rise, which the service carefully normalised on the way in. Parsed and added
-back as a feature, average precision goes from 0.608 to 0.604 against a fold spread of 0.056:
-it changes nothing, and the contract was the defect.
+column of the training frame, so a caller had to supply the anonymised identifier and the two
+join keys, none of which reach the model. One of the five was the previous pay rise, which the
+service carefully normalised on the way in. Parsed and added back as a feature, it moves
+average precision from 0.608 to 0.604 against a fold spread of 0.056, so the field adds
+nothing and the defect was in the contract.
 
 ## What this does not prove
 
-The five limits this protocol cannot lift are in the README, under that heading. They are limits
-of the data and of the design, not of the measurement, which is why they are stated where a
-reader meets the numbers rather than here.
+The five limits this protocol cannot lift are in the README, under that heading. They come
+from the data and the design, not from the measurement, so they are stated where a reader
+meets the numbers.
