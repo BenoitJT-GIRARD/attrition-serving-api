@@ -60,14 +60,26 @@ def _read(name: str) -> pd.DataFrame | None:
 def _wilson(successes: np.ndarray, trials: np.ndarray, z: float = 1.96):
     """The Wilson interval for a proportion, which does not fall off the end near 0 or 1.
 
-    The normal approximation puts the HR department's recall interval outside [0, 1] on
-    twelve departures, which is the case the table exists to be honest about.
+    The normal approximation puts the HR department's recall interval above 1 on its twelve
+    departing employees, and that group is one the figure has to show.
     """
     p = successes / trials
     denominator = 1 + z**2 / trials
     centre = (p + z**2 / (2 * trials)) / denominator
     half = z * np.sqrt(p * (1 - p) / trials + z**2 / (4 * trials**2)) / denominator
     return centre - half, centre + half
+
+
+def _recall_interval(recall: np.ndarray, scored_departures: np.ndarray, n_repeats: int):
+    """The Wilson interval on a group's recall, counted over employees.
+
+    Each employee is scored once per repeat, so a group's scored departures are its departing
+    employees counted `n_repeats` times. Counting them as independent trials would narrow the
+    interval by a factor of about the square root of `n_repeats`. The recall is kept, and the
+    number of trials is divided by the number of repeats.
+    """
+    employees = np.asarray(scored_departures, dtype=float) / n_repeats
+    return _wilson(np.asarray(recall, dtype=float) * employees, employees)
 
 
 def figure_pr_curves(base_rate: float) -> None:
@@ -193,19 +205,18 @@ def figure_cost_curve(shipped_ratio: int) -> None:
         FIGURES_DIR / "cost_curve.png",
         n={"scored rows": 7350, "departures": 1185, "folds": 25},
         source=SOURCE,
-        note="each point is the mean over the 25 folds",
+        note="each point is the mean over the 5 repeats",
     )
     close(figure)
     print("[ok] cost_curve.png")
 
 
-def figure_subgroups() -> None:
+def figure_subgroups(n_repeats: int) -> None:
     table = _read("subgroups.csv")
     if table is None:
         return
     table = table.dropna(subset=["recall"]).copy()
-    caught = (table["recall"] * table["n_positive"]).round().to_numpy()
-    low, high = _wilson(caught, table["n_positive"].to_numpy())
+    low, high = _recall_interval(table["recall"], table["n_positive"], n_repeats)
 
     labels = [f"{row.attribute} — {row.group}" for row in table.itertuples()]
     positions = np.arange(len(table))
@@ -254,7 +265,7 @@ def figure_subgroups() -> None:
             "attributes": int(table["attribute"].nunique()),
             "groups": len(table),
         },
-        dispersion="95 % Wilson interval on the recall of each group",
+        dispersion=f"95 % Wilson interval over employees (scored rows / {n_repeats} repeats)",
         source=SOURCE,
     )
     close(figure)
@@ -296,7 +307,9 @@ def figure_importance(top_n: int = 15) -> None:
     axis.set_yticklabels(table["feature"], fontsize=8)
     axis.set_xlabel("average precision lost when the column is shuffled")
     axis.set_ylabel("feature")
-    axis.set_title(f"What each feature is worth — the {len(table)} largest of {total}")
+    # `total` counts every column of the frame that was shuffled, including the ones the
+    # model does not read: their importance is zero.
+    axis.set_title(f"What each column is worth — the {len(table)} largest of {total} shuffled")
     figure.tight_layout()
     save_figure(
         figure,
@@ -320,12 +333,13 @@ def main() -> int:
     meta = json.loads(summary.read_text(encoding="utf-8"))
     base_rate = float(meta["protocol"]["prevalence"])
     shipped_ratio = int(meta["protocol"]["shipped_cost_ratio"])
+    n_repeats = int(meta["protocol"]["n_repeats"])
 
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     figure_pr_curves(base_rate)
     figure_calibration(base_rate)
     figure_cost_curve(shipped_ratio)
-    figure_subgroups()
+    figure_subgroups(n_repeats)
     figure_importance()
     return 0
 

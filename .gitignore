@@ -12,8 +12,8 @@ wheels/
 .venv
 
 # The extracts, and everything derived from them. docs/data-source.md says what they are and
-# how to put them back. The CONTENTS are ignored and not the directory: a root directory that
-# git never sees is a root directory a reader never sees either.
+# how to put them back. Only the contents are ignored. No file under data/ is tracked, so a
+# clone has no data/ directory until scripts/build_extracts.py writes one.
 data/raw/*
 data/processed/*
 

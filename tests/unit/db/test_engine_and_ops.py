@@ -8,11 +8,22 @@ against a real PostgreSQL is the integration tier's job.
 
 from __future__ import annotations
 
+import importlib
+from contextlib import contextmanager
+
 import pytest
 from sqlalchemy import create_engine, text
 
 from attrition_serving.db.engine import connect_args_for, get_database_url
-from attrition_serving.db.serving_ops import count_rows, fetch_history, truncate_predictions
+from attrition_serving.db.serving_ops import (
+    apply_schema,
+    count_rows,
+    fetch_history,
+    truncate_predictions,
+)
+
+db_apply_schema = importlib.import_module("db_apply_schema")
+db_run_checks = importlib.import_module("db_run_checks")
 
 
 @pytest.fixture(autouse=True)
@@ -115,3 +126,60 @@ def test_the_truncation_names_the_table_it_empties() -> None:
 
     assert "TRUNCATE TABLE predictions" in source
     assert "employees" in source  # the comment that says why it is not touched
+
+
+class _RecordingEngine:
+    """Stands in for a PostgreSQL engine and keeps the SQL it is handed."""
+
+    def __init__(self) -> None:
+        self.executed: list[str] = []
+
+    @contextmanager
+    def begin(self):
+        engine = self
+
+        class _Connection:
+            def execute(self, statement) -> None:
+                engine.executed.append(str(statement))
+
+        yield _Connection()
+
+
+def test_the_schema_is_found_from_any_working_directory(tmp_path, monkeypatch) -> None:
+    """The schema path used to be relative, so a run from another directory found no file."""
+    monkeypatch.chdir(tmp_path)
+    engine = _RecordingEngine()
+
+    apply_schema(engine)  # type: ignore[arg-type]
+
+    assert "CREATE TABLE IF NOT EXISTS predictions" in engine.executed[0]
+
+
+def test_the_schema_script_runs_from_any_working_directory(tmp_path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("SKIP_DOTENV", "1")
+    monkeypatch.chdir(tmp_path)
+    engine = _RecordingEngine()
+    monkeypatch.setattr(db_apply_schema, "get_engine", lambda: engine)
+
+    db_apply_schema.main()
+
+    assert "CREATE TABLE IF NOT EXISTS employees" in engine.executed[0]
+    assert "[ok] schema applied" in capsys.readouterr().out
+
+
+def test_the_seed_checks_run_from_any_working_directory(log, tmp_path, monkeypatch, capsys) -> None:
+    """The three checks are plain SELECTs, so the SQLite log above can answer them."""
+    with log.begin() as conn:
+        conn.execute(text("ALTER TABLE employees ADD COLUMN features TEXT"))
+    monkeypatch.setenv("SKIP_DOTENV", "1")
+    workdir = tmp_path / "elsewhere"
+    workdir.mkdir()
+    monkeypatch.chdir(workdir)
+    monkeypatch.setattr(db_run_checks, "get_engine", lambda: log)
+
+    db_run_checks.main()
+
+    out = capsys.readouterr().out
+    assert "[(2,)]" in out
+    assert "[(3,)]" in out
+    assert "[ok] checks executed" in out

@@ -27,15 +27,15 @@
       "dispersion": null,
       "dpi": 200,
       "n": "n(scored rows) = 7350, n(departures) = 1185, n(folds) = 25",
-      "sha256": "e587a8e0bf7c4d4906c8442f028c02efda0a27be0e0ebc7c7c70d0835c34b2ba",
+      "sha256": "552990360c8cfb76abe14be36d755a891d6e5c6f31217ddfabf6ae3cbc1dafa2",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-10-10"
+      "written": "2026-10-27"
     },
     "permutation_importance.png": {
       "axes": [
         {
-          "title": "What each feature is worth — the 15 largest of 37",
+          "title": "What each column is worth — the 15 largest of 37 shuffled",
           "x": "average precision lost when the column is shuffled",
           "y": "feature"
         }
@@ -43,10 +43,10 @@
       "dispersion": "one point per fold; rule: the mean; bar: ±1 standard error of the mean",
       "dpi": 200,
       "n": "n(scored rows) = 7350, n(folds) = 25",
-      "sha256": "0bc9f575ce0bf76a65c48134cd1b9c1ccd459b91c0f7fa38e326dbed72fce88c",
+      "sha256": "68a2e0b428771052cbb7b54b2a2ca4c7278429939e34c5f9cac5c3a3ffb96be1",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-10-10"
+      "written": "2026-10-27"
     },
     "pr_curves.png": {
       "axes": [
@@ -72,13 +72,13 @@
           "y": "subgroup"
         }
       ],
-      "dispersion": "95 % Wilson interval on the recall of each group",
+      "dispersion": "95 % Wilson interval over employees (scored rows / 5 repeats)",
       "dpi": 200,
       "n": "n(scored rows) = 7350, n(attributes) = 3, n(groups) = 8",
-      "sha256": "258b0442915bc63b9789eb45a8f67ccaa5f9be8a624fd73d333f9a079c8b9280",
+      "sha256": "4f85485570641cc8f2e65ce385156c1cdd1021086770cbf3cdbf1153719b3fe7",
       "source": "scripts/build_figures.py",
       "style_version": 1,
-      "written": "2026-10-10"
+      "written": "2026-10-27"
     }
   },
   "schema": "image-manifest/1"

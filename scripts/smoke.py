@@ -65,10 +65,12 @@ KEY_OUTPUT: tuple[str, ...] = (
 TOOLS: tuple[str, ...] = ("scikit-learn", "pandas", "numpy", "scipy", "statsmodels")
 
 
-#: The three commands the README's « Running it » section quotes, in that order. Written as
-#: module names and not as shell strings, so the run uses the interpreter this script was
-#: started with and not whatever `python` happens to mean on the PATH.
+#: The commands the README's « Running it » section quotes after `build_extracts.py`, in that
+#: order. `build_frames` comes first because the three after it read the frames it writes.
+#: Written as module names and not as shell strings, so the run uses the interpreter this
+#: script was started with and not whatever `python` happens to mean on the PATH.
 CHAIN = (
+    "build_frames",
     "data_quality_report",
     "run_evaluation",
     "train_export_pipeline",

@@ -149,8 +149,9 @@ CAPTURES: tuple[Capture, ...] = (
             "prediction made yet"
         ),
         demonstrates_behaviour=(
-            "the five routes and the API-key scheme are generated from the Pydantic models, "
-            "so the page a caller reads cannot drift from the contract the service enforces"
+            "the five routes and the API-key scheme are generated from the Pydantic models. "
+            "The 32 required features are checked against models/expected_features.json "
+            "and do not appear on the page"
         ),
         data_source="none: the page is generated from the Pydantic models",
         depends_on=(

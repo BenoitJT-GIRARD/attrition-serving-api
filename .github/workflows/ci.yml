@@ -1,6 +1,6 @@
 name: CI
 
-# No `schedule` trigger: this workflow runs on code changes, and at no other time.
+# No `push`, `pull_request` or `schedule` trigger: this workflow runs only when started by hand.
 # Manual only, from 2026-09-18 onward: the evidence run predates this change.
 on:
   workflow_dispatch:

@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 from attrition_serving.api.settings import reset_config_cache
 from attrition_serving.db.serving_ops import apply_schema, truncate_predictions
 
-#: The local docker-compose database. Override with DATABASE_URL to point elsewhere.
+#: The local docker-compose database. Override with TEST_DATABASE_URL to point elsewhere.
 DEFAULT_URL = "postgresql+psycopg://attrition:attrition_pwd@localhost:5432/attrition_serving"
 
 #: Seconds to wait for a connection before deciding there is nothing there.
@@ -56,7 +56,7 @@ def _test_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("API_KEY", "test_key")
     monkeypatch.setenv("MODEL_VERSION", "test")
     # An explicit threshold: these tests exercise the round trip, not the operating point,
-    # and tests/unit/test_served_threshold_matches_artifact.py is what pins the default.
+    # and tests/unit/api/test_served_threshold.py is what pins the default.
     monkeypatch.setenv("MODEL_THRESHOLD", "0.5")
     monkeypatch.setenv("DATABASE_URL", os.getenv("TEST_DATABASE_URL", DEFAULT_URL))
     reset_config_cache()

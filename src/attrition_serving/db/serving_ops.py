@@ -12,8 +12,13 @@ from typing import Any, Literal
 
 from sqlalchemy import Engine, text
 
+from attrition_serving.utils.paths import SQL_DIR
 
-def apply_schema(engine: Engine, schema_path: str = "sql/serving/01_schema.sql") -> None:
+#: The serving schema, found from the repository root and not from the working directory.
+SCHEMA_PATH: Path = SQL_DIR / "serving" / "01_schema.sql"
+
+
+def apply_schema(engine: Engine, schema_path: Path = SCHEMA_PATH) -> None:
     sql = Path(schema_path).read_text(encoding="utf-8")
     with engine.begin() as conn:
         conn.execute(text(sql))

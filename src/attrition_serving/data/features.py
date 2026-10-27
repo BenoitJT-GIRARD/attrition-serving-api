@@ -1,7 +1,8 @@
 """The derived columns, and the incoherences that survive the derivation.
 
-`add_engineered_features` builds the ratios the model uses -- experience per year of adult
-life, the change in evaluation, the promotion gap. `compute_incoherence_metrics` counts the
+`add_engineered_features` builds the derived columns the model uses -- whether the employee
+has changed role, previous employers per year of experience and per adult year, experience
+per adult year, and the change in evaluation. `compute_incoherence_metrics` counts the
 rows those ratios come out impossible on, which is a data-quality figure rather than a
 feature: it belongs in the report, not in the frame.
 """

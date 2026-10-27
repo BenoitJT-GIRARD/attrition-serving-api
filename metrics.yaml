@@ -48,8 +48,8 @@ metrics:
     anchor: "0.0147 — reports/evaluation_summary.json#arms.crossfit.calibration.ece"
     business_reading: >-
       When the service returns 0.30, about thirty employees in a hundred with that score do
-      leave. Before recalibration the same 0.30 meant nine, and a manager reading the number
-      as a risk would have been wrong by a factor of three.
+      leave. Before recalibration the same 0.30 meant about six, and a manager reading the
+      number as a risk would have overstated it about fivefold.
     source: "scripts/run_evaluation.py, on the pooled out-of-fold predictions"
     uncertainty: >-
       Reported as a point value over 7 350 scored rows. It is a summary of a curve, and
@@ -69,8 +69,9 @@ metrics:
 
   threshold:
     definition: >-
-      The score at or above which the service decides to flag. Chosen inside each fold on a
-      validation split the scoring fold never sees, at the cost ratio the model card records.
+      The score at or above which the service decides to flag. For each of the five repeats,
+      the score that minimises expected cost on that repeat's out-of-fold predictions, at the
+      cost ratio the model card records; the shipped value is the mean of the five.
     unit: "probability, 0 to 1"
     direction: target
     anchor: "0.1105 — models/model_card.json#default_threshold"
@@ -91,8 +92,8 @@ metrics:
       Thirty-seven employees in a hundred land on the retention list. That is the workload the
       threshold creates, and the reason the curve stops being useful past a ratio of 13, where
       the list covers half the company.
-    source: "scripts/run_evaluation.py, mean over the 25 folds"
-    uncertainty: "Standard deviation across the folds, published beside it in the same table."
+    source: "scripts/run_evaluation.py, mean over the five repeats"
+    uncertainty: "Standard deviation across the five repeats, beside it in the same table."
 
   base_rate:
     definition: "The share of a population that left, measured and not predicted."
@@ -118,8 +119,8 @@ metrics:
     business_reading: >-
       Four departures in five appear on the list in time for a conversation. The fifth does
       not, and no threshold catches it without lengthening the list for everyone.
-    source: "scripts/run_evaluation.py, mean over the 25 folds"
-    uncertainty: "Standard deviation across the folds, published beside it in the same table."
+    source: "scripts/run_evaluation.py, mean over the five repeats"
+    uncertainty: "Standard deviation across the five repeats, beside it in the same table."
 
   precision:
     definition: "The share of the alert list that really left."
@@ -130,8 +131,8 @@ metrics:
       Two conversations in three are held with someone who was not going to leave. That is the
       price of catching four departures in five, and it is exactly what the cost ratio of
       eight says an employer is willing to pay.
-    source: "scripts/run_evaluation.py, mean over the 25 folds"
-    uncertainty: "Standard deviation across the folds, published beside it in the same table."
+    source: "scripts/run_evaluation.py, mean over the five repeats"
+    uncertainty: "Standard deviation across the five repeats, beside it in the same table."
 
   recall_optimism:
     definition: >-
@@ -146,8 +147,9 @@ metrics:
       this to zero by construction and hides it.
     source: "scripts/run_evaluation.py, mean over the 25 folds"
     uncertainty: >-
-      A difference of two fold means, each with a standard deviation near 0.086. It is a
-      direction, not a precise quantity.
+      A difference of two means over the 25 folds. Recall on the scoring folds has a standard
+      deviation of 0.086 and recall on the validation splits one of 0.002. It is a direction,
+      not a precise quantity.
 
   permutation_importance:
     definition: >-

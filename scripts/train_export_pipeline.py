@@ -43,6 +43,10 @@ from attrition_serving.utils.paths import TESTS_DIR
 
 TARGET = "a_quitte_l_entreprise"
 
+#: The join keys. They carry the employee number in clear, next to its digest, and the model
+#: does not read them, so the request fixtures are written without them.
+JOIN_KEYS = ("eval_number", "eval_number_int", "code_sondage")
+
 
 def main() -> None:
     summary_path = PATHS.reports / "evaluation_summary.json"
@@ -76,9 +80,10 @@ def main() -> None:
 
     # What the API requires is what the model consumes -- not every column that happened
     # to be in the training frame. The previous list was `X.columns`, so a caller had to
-    # send the anonymised employee id and both join keys to get a prediction, and the
-    # pipeline dropped all three. Five required fields did nothing, one of them an
-    # identifier the service has no reason to ask for.
+    # send the anonymised employee id, the two join keys and the parsed form of one of them
+    # to get a prediction, along with the pay rise under a spelling the preprocessing does
+    # not read. The pipeline dropped all five, and four of them are identifiers the service
+    # has no reason to ask for.
     expected_features = [
         *groups.num_cont,
         *groups.num_log,
@@ -96,7 +101,9 @@ def main() -> None:
     # exercise the request path, they do not measure anything.
     fixtures_dir = TESTS_DIR / "fixtures"
     fixtures_dir.mkdir(parents=True, exist_ok=True)
-    X.head(10).to_json(fixtures_dir / "employees_sample.json", orient="records")
+    X.head(10).drop(columns=list(JOIN_KEYS)).to_json(
+        fixtures_dir / "employees_sample.json", orient="records"
+    )
     y.head(10).to_json(fixtures_dir / "employees_sample_labels.json", orient="records")
 
     model_card = {

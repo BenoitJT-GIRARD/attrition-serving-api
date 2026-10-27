@@ -6,9 +6,9 @@ missing.
 
 `align_features` reads `models/expected_features.json` and hands the pipeline the columns
 it was fitted on, in that order. The contract used to demand five fields the model never
-consumed -- two join keys, the anonymised id, and the previous pay rise -- and the service
-carefully normalised one of them on the way in. A pipeline fed columns in another order
-does not complain; it predicts something else.
+consumed -- the two join keys, the parsed form of one of them, the anonymised id, and the
+previous pay rise -- and the service carefully normalised one of them on the way in. A
+pipeline fed columns in another order does not complain; it predicts something else.
 
 `decide` is one line, and it is the line the whole service exists to run.
 """
@@ -44,9 +44,10 @@ def load_pipeline():
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """
-    Accept the shapes a human or another system actually sends -- "M", "Oui", "11%" --
-    and hand the pipeline the dtypes it was trained on. Without this the model receives a
-    string where it learned a number, and scikit-learn's error names a column, not a cause.
+    Accept the shapes a human or another system actually sends for gender and overtime --
+    "M", "Oui" -- and hand the pipeline the dtypes it was trained on. Without this the model
+    receives a string where it learned a number, and scikit-learn's error names a column, not
+    a cause.
     """
     p = dict(payload)
 

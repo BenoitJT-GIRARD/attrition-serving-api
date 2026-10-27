@@ -3,18 +3,17 @@
 The fastest way to see whether a seed landed, and what the log currently holds.
 """
 
-from pathlib import Path
-
 from sqlalchemy import text
 
 from attrition_serving.db.engine import get_engine
 from attrition_serving.env import load_env
+from attrition_serving.utils.paths import SQL_DIR
 
 
 def main():
     load_env()
     engine = get_engine()
-    sql_path = Path("sql/serving/02_seed_checks.sql")
+    sql_path = SQL_DIR / "serving" / "02_seed_checks.sql"
     sql = sql_path.read_text(encoding="utf-8")
 
     with engine.connect() as conn:

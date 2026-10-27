@@ -85,10 +85,11 @@ def join_sources(
     sondage: pd.DataFrame,
     how: Literal["inner", "left"] = "inner",
 ) -> pd.DataFrame:
-    """
-    Join strategy:
-    - Map eval_number_int <-> id_employee and code_sondage <-> id_employee
-      (assumption based on your mapping; if needed we'll adapt after inspecting CSVs)
+    """Join the review extract on `eval_number_int` and the survey extract on `code_sondage`.
+
+    Both are matched against `id_employee`. The three columns carry the same employee number,
+    as `data/source.py` records, so on the published extracts the inner join keeps all
+    1 470 rows.
     """
     if "eval_number_int" not in eval_df.columns:
         raise KeyError("eval_df missing 'eval_number_int' (run load_eval)")

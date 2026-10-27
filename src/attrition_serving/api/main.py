@@ -31,9 +31,10 @@ app = FastAPI(
     title="Attrition serving API",
     version="1.0.0",
     description=(
-        "Attrition scoring with a logged decision: every prediction is written to "
+        "Attrition scoring with a logged decision: each prediction is written to "
         "PostgreSQL with the probability, the threshold and the model version that "
-        "produced it."
+        "produced it. The write is best-effort, and a response whose write failed "
+        "carries `stored: false`."
     ),
     lifespan=lifespan,
 )

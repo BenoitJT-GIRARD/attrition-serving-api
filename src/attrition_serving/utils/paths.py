@@ -68,6 +68,7 @@ REPORTS_DIR: Path = ROOT_DIR / "reports"
 FIGURES_DIR: Path = REPORTS_DIR / "figures"
 DATA_DIR: Path = ROOT_DIR / "data"
 MODELS_DIR: Path = ROOT_DIR / "models"
+SQL_DIR: Path = ROOT_DIR / "sql"
 INFRA_DIR: Path = ROOT_DIR / "infra"
 
 #: The only ignored directory: logs, checkpoints, caches, coverage reports, anything a run

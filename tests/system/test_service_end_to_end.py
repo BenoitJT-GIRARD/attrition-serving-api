@@ -180,8 +180,8 @@ def test_the_alert_rate_the_product_shows_is_the_one_the_cost_curve_publishes(
 ) -> None:
     """A hundred real requests, and the share flagged compared with the published band.
 
-    The tolerance is the fold-to-fold spread of the alert rate at the shipped ratio, widened
-    to three of them. A hundred draws from ten fixtures is a small and in-sample sample: the
+    The tolerance is the repeat-to-repeat spread of the alert rate at the shipped ratio,
+    widened to three of them. A hundred draws from ten fixtures is a small and in-sample sample: the
     test is here to catch a threshold that has silently moved, not to re-estimate the rate.
     """
     with COST_CURVE.open(encoding="utf-8") as handle:
@@ -200,7 +200,7 @@ def test_the_alert_rate_the_product_shows_is_the_one_the_cost_curve_publishes(
     observed = flagged / len(payloads)
     assert abs(observed - published) <= 3 * spread, (
         f"the service flags {observed:.0%} of the requests where reports/cost_curve.csv "
-        f"publishes {published:.0%} ± {spread:.0%} across folds"
+        f"publishes {published:.0%} ± {spread:.0%} across repeats"
     )
 
 

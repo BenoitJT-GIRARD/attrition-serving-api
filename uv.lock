@@ -301,7 +301,7 @@ wheels = [
 
 [[package]]
 name = "attrition-serving"
-version = "1.0.2"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },

@@ -1,7 +1,7 @@
 [project]
 name = "attrition-serving"
-version = "1.0.2"
-description = "Attrition model served behind an API that records every decision it makes."
+version = "1.0.0"
+description = "Attrition model served behind an API that logs each decision it makes, on a best-effort basis."
 readme = "README.md"
 authors = [
     { name = "Benoît J. T. GIRARD", email = "53222414+BenoitJT-GIRARD@users.noreply.github.com" }
@@ -38,8 +38,9 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "python-dotenv>=1.2.1",
-    # Pinned: 0.14 and 0.16 disagree on thirty-seven findings, and a lint that passes on
-    # one machine and fails on the next is worse than no lint at all.
+    # A floor here, and uv.lock pins the exact version the CI installs: 0.14 and 0.16
+    # disagree on thirty-seven findings, and a lint that passes on one machine and fails on
+    # the next is worse than no lint at all.
     "ruff>=0.16.6",
     "httpx>=0.28.1",
     # The test client of starlette 1.x is built on httpx2, and warns if only httpx is there.
@@ -69,9 +70,10 @@ line-length = 100
 extend-select = ["I"]
 
 [tool.ruff.lint.flake8-bugbear]
-# `Depends()` and `Query()` in a default argument is how FastAPI declares a dependency; the
-# object is inspected at import, never mutated per request. B008 exists for mutable
-# defaults, which these are not.
+# `Depends()`, `Query()` and `Header()` in a default argument are how FastAPI declares a
+# dependency; the object is inspected at import, never mutated per request. Bugbear's B008
+# flags any function call in a default argument, and this list exempts these three. The
+# bugbear rules are not selected above, so the setting has no effect until they are.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header"]
 
 
@@ -81,7 +83,7 @@ quote-style = "double"
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-#  is on the path so the unit tier can import a script and test the function it
+# `scripts/` is on the path so the unit tier can import a script and test the function it
 # holds, instead of shelling out to it and asserting on printed text.
 pythonpath = ["src", "scripts"]
 addopts = "-ra --strict-markers --cov --cov-branch --cov-report=term-missing --cov-report=xml:reports/coverage/coverage.xml"

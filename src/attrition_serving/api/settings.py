@@ -4,7 +4,9 @@ The threshold is the part worth reading. It comes from the model card unless
 `MODEL_THRESHOLD` overrides it, and **a card without a threshold is an error rather than a
 default**: this service once looked up a key the export does not write, fell back to 0.5,
 and served an operating point nothing documented while every published figure said
-otherwise. Refusing to start is the cheaper failure.
+otherwise. `get_config` runs lazily, when a route first asks for it: without a threshold the
+service starts, `/health` answers, and every keyed route fails with a server error. That is
+the cheaper failure.
 """
 
 from __future__ import annotations
@@ -52,7 +54,8 @@ def get_config() -> AppConfig:
     # writes `default_threshold`. The lookup missed every time and fell back to 0.5, so the
     # service decided at 0.5 while every published figure said 0.32 -- recall 0.625 served
     # against 0.833 documented. A missing threshold is now an error rather than a silent
-    # default: refusing to start costs less than serving an operating point nothing documents.
+    # default: a request that fails costs less than one decided at an operating point nothing
+    # documents.
     override = os.getenv("MODEL_THRESHOLD")
     if override:
         threshold = float(override)

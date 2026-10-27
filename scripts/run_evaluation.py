@@ -170,7 +170,7 @@ def main() -> None:
     pd.concat(curves, ignore_index=True).to_csv(PATHS.reports / "pr_curves.csv", index=False)
 
     # Feature importance, in the folds. The published table used to come out of a notebook,
-    # computed on the 147 rows of the split this protocol replaced.
+    # computed on the 294 test rows of notebook 05's single 80/20 split.
     importance = permutation_importance_cv(
         X, y, lambda: make_logreg(groups), params=FINAL_MODEL_PARAMS
     )

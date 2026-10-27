@@ -10,9 +10,10 @@ come out as 1..N and every output is from that one pass.
     uv run python scripts/run_notebooks.py
     uv run python scripts/run_notebooks.py --check    # fail if a notebook is stale
 
-A notebook writes nothing outside itself. What is published under ``reports/`` comes from
-the scripts, because a figure a notebook redrew is a figure no manifest can trace back to
-a command.
+No notebook writes under ``reports/``. What is published there comes from the scripts,
+because a figure a notebook redrew is a figure no manifest can trace back to a command.
+Notebooks 01 and 03 write the two frames under ``data/processed/``, the same files
+``scripts/build_frames.py`` writes, and notebooks 04 and 05 write their MLflow runs to disk.
 """
 
 from __future__ import annotations

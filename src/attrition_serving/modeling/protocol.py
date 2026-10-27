@@ -4,15 +4,18 @@ Everything published about the model comes through here, and the module exists b
 previous arrangement made two mistakes that a reader cannot see in a result.
 
 **The operating point was chosen on the data that scored it.** The tuning notebook ran
-``find_threshold_for_recall(y_test, p_test, target_recall=0.80)``. A recall of 0.80 obtained
-that way is not a property of the model, it is the definition of the threshold. Here the
-threshold is chosen inside the training part of each fold, on a validation split the scoring
-fold never touches, and the gap between the recall aimed at and the recall obtained is
-itself reported -- that gap is the price of the earlier method.
+``find_threshold_for_recall(y_test, p_test, target_recall=0.80)`` on its 20% test split, 294
+rows of which 47 are leavers. A recall of 0.80 obtained that way is not a property of the
+model, it is the definition of the threshold. Here the threshold is chosen inside the
+training part of each fold, on a validation split the scoring fold never touches, and the gap
+between the recall aimed at and the recall obtained is itself reported -- that gap is the
+price of the earlier method.
 
-**A single 10% split carried every figure.** 147 rows, 24 of them leavers. Bootstrapped, the
-average precision on that split spans [0.355, 0.726]. Repeated stratified cross-validation
-uses all 1,470 rows and reports the spread it actually has.
+**A single 10% split carried the published metrics.** The export script held out 147 rows, 24
+of them leavers, and the model card quoted its figures from them. Bootstrapped, the average
+precision on that split spans [0.355, 0.726]; no committed script computes that interval.
+Repeated stratified cross-validation uses all 1,470 rows and reports the spread it actually
+has.
 
 Nothing here reads the test fold to decide anything: not the threshold, not the
 recalibration, not the subgroup cut points.
@@ -70,7 +73,7 @@ class ProtocolConfig:
 
 
 def select_threshold(y_true, p_hat, target_recall: float = 0.80) -> float:
-    """The lowest threshold whose recall reaches ``target_recall`` on the data given.
+    """The highest threshold whose recall still reaches ``target_recall`` on the data given.
 
     Returns the median probability when the target is unreachable, rather than 0.5: a
     constant taken from nowhere is how a threshold stops being traceable to anything.
@@ -244,7 +247,7 @@ def permutation_importance_cv(
     """How much average precision each feature is worth, measured on folds it did not fit.
 
     One fit per outer fold, and the shuffling happens on the scoring fold only. The previous
-    version of this table came from a notebook, on the 147 rows of the abandoned 90/10 split,
+    version of this table came from a notebook, on the 294 test rows of its single 80/20 split,
     and was published next to numbers computed another way entirely.
     """
     cfg = config or ProtocolConfig()
