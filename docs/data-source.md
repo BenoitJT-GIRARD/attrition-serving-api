@@ -1,14 +1,14 @@
 # Where the data comes from
 
-The three files under `data/raw/` are one public dataset, cut in three: IBM's *HR Analytics
-Employee Attrition & Performance*, a sample dataset IBM's own data scientists generated and
-published. The rows are fictional, and none of them describes a person.
+The three files under `data/raw/` are one public dataset cut into three parts. The dataset is
+IBM's *HR Analytics Employee Attrition & Performance*, a sample dataset that IBM's data
+scientists generated and published. The rows are fictional and describe no real person.
 
-As a result, nothing here needs to be protected from a reader, and someone who has never seen
-the extracts can still check every number this repository publishes, since the upstream file
-is public and the correspondence below is complete.
+The data therefore needs no protection from a reader. The upstream file is public and the
+correspondence below covers every column, so someone who has never seen the extracts can
+rebuild them and recompute the published tables.
 
-## What identifies it
+## Identifying the dataset
 
 | | |
 |---|---|
@@ -18,33 +18,35 @@ is public and the correspondence below is complete.
 | Columns IBM ships and the extracts drop | `DailyRate`, `HourlyRate`, `MonthlyRate` |
 | Constant columns kept | `nombre_heures_travailless` = 80, `ayant_enfants` = `Y`, `nombre_employee_sous_responsabilite` = 1 |
 
-Those three constants are the fingerprint. IBM's file carries `StandardHours` = 80, `Over18` =
-`Y` and `EmployeeCount` = 1 for every one of its 1 470 rows, and no other public HR dataset
-carries that trio at that row count.
+These three constant columns match IBM's file, which has `StandardHours` = 80, `Over18` = `Y`
+and `EmployeeCount` = 1 in all of its 1 470 rows.
 
-`uv run python scripts/build_extracts.py --check` replays the whole signature, every range and
-every value count in the table below, against whatever sits in `data/raw/`, and names the
-column that disagrees. Run it before quoting a number.
+`uv run python scripts/build_extracts.py --check` compares the files in `data/raw/` with the
+signature of the dataset: the row count, the column names, and every range and value count of
+the profile in `source.py`. It lists the disagreements it finds, at most twelve of them, and a
+file whose column names differ is reported as a whole. Run it before quoting a number.
 
 ## Why the columns are in French
 
-The extracts are a repackaging of the dataset: the columns were renamed into French and the
-categories re-themed as a consulting firm. `Research & Development` became `Consulting`,
-`Life Sciences` became `Infra & Cloud`, and `Sales Executive` became `Cadre Commercial`. Nothing was resampled or perturbed: the value
-counts are IBM's, to the row.
+The extracts are a repackaging of the dataset. The columns were renamed in French and the
+categories re-themed as a consulting firm: `Research & Development` became `Consulting`,
+`Life Sciences` became `Infra & Cloud`, and `Sales Executive` became `Cadre Commercial`. No row
+was resampled or perturbed, and the value counts match IBM's exactly.
 
-Two of the French names suggest something the column does not hold.
+Two French names suggest a content that the column does not hold.
 `nombre_employee_sous_responsabilite` reads as "employees managed" and is `EmployeeCount`, a
-constant 1. `nombre_heures_travailless` reads as hours worked and is `StandardHours`, a
-constant 80. Both are dropped before the model sees anything.
+constant 1. `nombre_heures_travailless` reads as "hours worked" and is `StandardHours`, a
+constant 80. The feature engineering drops `nombre_heures_travailless`.
+`nombre_employee_sous_responsabilite` stays among the 32 features that the model and the API
+expect, and since it never varies, its permutation importance is zero.
 
 ## The correspondence, column by column
 
 The correspondence was established by matching each column's range and, for categorical
-columns, its exact value counts. `src/attrition_serving/data/source.py` carries the table in code, and the unit tests
-replay it.
+columns, its exact value counts. `src/attrition_serving/data/source.py` holds the same table in
+code, and the unit tests check it.
 
-### `extrait_sirh.csv` — contract and demographics
+### `extrait_sirh.csv`: contract and demographics
 
 | Extract | IBM | Values |
 |---|---|---|
@@ -61,7 +63,7 @@ replay it.
 | `annees_dans_l_entreprise` | `YearsAtCompany` | 0 to 40 |
 | `annees_dans_le_poste_actuel` | `YearsInCurrentRole` | 0 to 18 |
 
-### `extrait_eval.csv` — the annual review
+### `extrait_eval.csv`: the annual review
 
 | Extract | IBM | Values |
 |---|---|---|
@@ -76,11 +78,11 @@ replay it.
 | `heure_supplementaires` | `OverTime` | Oui ← Yes (416), Non ← No (1 054) |
 | `augementation_salaire_precedente` | `PercentSalaryHike` | rendered `"11 %"` … `"25 %"` |
 
-The five 1-to-4 columns are told apart by their distributions, which is the only way: all five
-share the same range. `JobInvolvement` and `WorkLifeBalance` are the two skewed ones (83 / 375 /
-868 / 144 and 80 / 344 / 893 / 153); the three satisfaction scales are flat.
+The five columns scored from 1 to 4 can be told apart only by their distributions, since they
+share the same range. `JobInvolvement` and `WorkLifeBalance` are concentrated on the value 3
+(868 and 893 of the 1 470 rows), and the three satisfaction scales are spread more evenly.
 
-### `extrait_sondage.csv` — the internal survey
+### `extrait_sondage.csv`: the internal survey
 
 | Extract | IBM | Values |
 |---|---|---|
@@ -97,11 +99,11 @@ share the same range. `JobInvolvement` and `WorkLifeBalance` are the two skewed 
 | `annees_depuis_la_derniere_promotion` | `YearsSinceLastPromotion` | 0 to 15 |
 | `annes_sous_responsable_actuel` | `YearsWithCurrManager` | 0 to 17 |
 
-## Putting the data back
+## Rebuilding the extracts
 
-The extracts are not committed: this repository has no licence that covers redistributing
-that particular repackaging of IBM's file. The upstream file does not have that problem, so
-what is shipped is the recipe.
+The extracts are not committed, because the repository has no licence covering the
+redistribution of this repackaging of IBM's file. The upstream file is publicly available, so
+the repository ships the procedure that rebuilds the extracts from it.
 
 ```bash
 # 1. get WA_Fn-UseC_-HR-Employee-Attrition.csv — IBM sample data, mirrored on Kaggle
@@ -110,26 +112,33 @@ uv run python scripts/build_extracts.py --source path/to/WA_Fn-UseC_-HR-Employee
 uv run python scripts/build_extracts.py --check
 ```
 
-The script refuses any value the mapping above does not name, and re-runs the signature check
-on what it wrote. From there `scripts/run_evaluation.py` reproduces every published number.
+The script stops on any categorical value that the mapping does not name, and it runs the
+signature check on the files it has written. `uv run python scripts/build_frames.py` then
+builds the joined frame and the feature frame under `data/processed/`, with the same library
+calls as notebooks 01 and 03. From those frames, `scripts/data_quality_report.py`,
+`scripts/run_evaluation.py` and `scripts/train_export_pipeline.py` recompute the published
+tables and the artefact.
 
-## What is done to it afterwards
+## Processing after the join
 
-The three files are joined on the employee: `id_employee`, `eval_number` and `code_sondage`
-are the same number in three spellings. The identifier is then replaced by an HMAC-SHA256
-digest keyed from the environment.
+The three files are joined on the employee, since `id_employee`, `eval_number` and
+`code_sondage` hold the same number in three spellings. Notebook 01 and
+`scripts/build_frames.py` then replace `id_employee` with the prefix `emp_` followed by the
+first sixteen hexadecimal characters of an HMAC-SHA256 digest, stored as `employee_id_anon`,
+under a key read from the environment. `eval_number`, its
+parsed form `eval_number_int` and `code_sondage` remain in the joined frame, so the original
+number stays readable next to its digest. The ten test fixtures leave these three columns out.
 
-That anonymisation is there as a demonstration: the rows are fictional, so there is nothing
-to protect. It is kept because the plain digest of a small, enumerable identifier space is
-reversible by trying every number, and the point is to show the keyed version.
-`docs/operations.md` says where the key lives.
+The anonymisation is a demonstration, since the rows are fictional. A plain hash of a small,
+enumerable set of identifiers can be reversed by hashing every candidate, and the keyed digest
+shows the technique that prevents this. [`operations.md`](operations.md) says where the key is
+set.
 
-## The licence
+## Licence
 
 IBM published the dataset as sample data, and it is mirrored on Kaggle under the terms of that
 page: <https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset>,
 consulted on 2026-09-15.
 
-This repository redistributes none of it: `data/` holds nothing tracked, and the ten rows
-under `tests/fixtures/` are request-shaped payloads for the API tests, derived from the
-extracts and kept because ten fictional rows are what a test needs.
+The repository tracks no file under `data/`. The ten rows under `tests/fixtures/` are derived
+from the extracts and kept as request payloads for the API tests.

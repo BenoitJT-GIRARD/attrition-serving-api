@@ -1,7 +1,7 @@
 {
   "command": "uv run python scripts/smoke.py",
-  "ran_at": "2026-10-10",
-  "git_revision": "729ade1e63c12960dac4477f990ab2d368958315",
+  "ran_at": "2026-10-27",
+  "git_revision": "74eb0934a1f03287ae5e41b1dac8b127fe881625",
   "tool_versions": {
     "python": "3.12.12",
     "scikit-learn": "1.8.0",
@@ -12,7 +12,7 @@
     "uv": "uv 0.11.6 (65950801c 2026-04-09 x86_64-pc-windows-msvc)",
     "docker": "Docker version 29.2.0, build 0b9d198"
   },
-  "duration_seconds": 99.8,
+  "duration_seconds": 94.2,
   "key_output": [
     "reports/data_quality.csv",
     "reports/cleaning_trace.csv",

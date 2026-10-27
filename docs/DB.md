@@ -1,12 +1,15 @@
-# The database — schema, the decision log, and what each column records
+# The database
 
-PostgreSQL is here so that no decision leaves the service without a row behind it. A model
-that scores without recording what it scored with cannot be audited afterwards, and HR
-decisions are the kind that get questioned later.
+PostgreSQL holds the decision log. Each prediction the service makes is written as a row with
+the probability, the threshold and the model version, so the decision can be examined later
+together with the values that produced it.
 
-The database does three things: it holds employee features so `/predict_by_id` can score
-someone already known, records every prediction with the probability, the threshold and the model version that
-produced it, and exposes that history through `/history`.
+The database has three uses. It holds employee features, so that `/predict_by_id` can score an
+employee from an id. It records each prediction. It returns that history through `/history`
+and `/history/{employee_id}`.
+
+The write is best-effort. When it fails, the route still returns its answer, with
+`stored: false`, and no row is written.
 
 ## Schema
 
@@ -34,41 +37,41 @@ erDiagram
 
 ### `employees`
 
-A minimal profile, as JSONB. `/predict_by_id/{employee_id}` reads `features` from here.
+One row per seeded employee. `/predict_by_id/{employee_id}` reads `features` from this table.
 
 | Column | Type | Role |
 |---|---|---|
-| `employee_id` | INTEGER (PK) | stable identifier |
+| `employee_id` | INTEGER (PK) | identifier set by the seed script |
 | `features` | JSONB | the model's input features |
 | `created_at` | TIMESTAMPTZ | insertion time |
 
 ### `predictions`
 
-The decision log. Every call appends a row; nothing is ever updated in place.
+The decision log. The service only inserts into this table and never updates a row.
 
 | Column | Type | Role |
 |---|---|---|
 | `id` | BIGSERIAL (PK) | prediction id |
 | `created_at` | TIMESTAMPTZ | time of the call |
 | `employee_id` | INTEGER (FK, nullable) | set when scored by id |
-| `input_payload` | JSONB | the exact payload scored |
+| `input_payload` | JSONB | the payload as scored, after normalisation |
 | `proba_depart` | DOUBLE | predicted probability, calibrated |
 | `prediction` | SMALLINT | the decision, 0 or 1 |
 | `threshold` | DOUBLE | the threshold that decided it |
 | `model_version` | TEXT | the model version that scored |
 
-`employee_id` is nullable because two routes write here: `/predict` takes a payload
-directly and has no employee to point at, while `/predict_by_id` takes an id and reads the
-features from `employees`.
+`employee_id` is nullable because two routes write to this table. `/predict` receives a payload
+and has no employee to refer to, and `/predict_by_id` receives an id and reads the features
+from `employees`.
 
-The payload is JSONB because the feature set changes over a model's life. JSONB absorbs
-that without a migration: a source that adds a field does not break the write, and the stored
-payload is the one that arrived, including any field that had no column when the table was
-created.
+The payload is stored as JSONB because the feature set can change over a model's life. A new
+field needs no migration, and the stored payload keeps every field of the request, including
+fields that had no column when the table was created. The service stores the payload after
+converting gender and overtime to integers, which is the form the model scored.
 
-There is one index on `predictions.created_at` for the history endpoint's ordering, and one
-on `predictions.employee_id` for the per-employee history. A GIN index on the JSONB
-would come next if the payloads were ever queried by content; at this volume nothing needs it.
+One index on `predictions.created_at` serves the ordering of the history routes, and one on
+`predictions.employee_id` serves the history of a single employee. No GIN index is defined on
+the JSONB column, since no query filters on the content of the payload.
 
 ## SQL and scripts
 
@@ -83,20 +86,26 @@ would come next if the payloads were ever queried by content; at this volume not
 | `scripts/db_run_checks.py` | replays `02_seed_checks.sql` statement by statement and prints what each returns |
 | `scripts/load_raw_to_postgres.py` | loads the three extracts so the exploratory views have something to read |
 
-The exploratory views are for analysis, and the API never opens them. They do the cleaning, the
-joins and the group statistics in SQL instead of pandas: 201 lines that answer the same
-questions as the first notebook, from the database's side.
+The scripts that read files under `sql/serving/` open them relative to the working directory,
+so they must be run from the repository root.
 
-## What gets seeded, and what does not
+The exploratory views serve analysis, and the API never queries them. In 201 lines of SQL, they
+clean, join and summarise the three extracts inside the database, which the first notebooks do
+in pandas.
 
-Ten rows, from `tests/fixtures/employees_sample.json`. They exercise the request path: the
-API ↔ database integration tests, and a `/predict_by_id` demonstration.
+## Seed data
 
-The full extract is neither seeded nor committed. [`data-source.md`](data-source.md) says
-what it is, a public and fictional dataset, and how to put it back. Even a dataset that
-describes nobody does not belong in the `docker compose` of a public repository.
+`scripts/db_seed_employees.py` inserts the ten rows of `tests/fixtures/employees_sample.json`
+into `employees`, with ids 1 to 10, so that `/predict_by_id` has employees to score. The
+integration tests send the first of these rows to `/predict` as a request payload. When
+`ENV_FILE` is `.env.local`, the default, the script first deletes every row of `predictions` and
+`employees`.
 
-## Queries worth knowing
+The full extract is neither seeded nor committed. [`data-source.md`](data-source.md) describes
+it, a public and fictional dataset, explains why the repository does not redistribute it, and
+gives the steps to rebuild it.
+
+## Useful queries
 
 ```sql
 SELECT COUNT(*) FROM employees;     -- is the seed there
@@ -115,10 +124,14 @@ docker exec -it attrition_postgres psql -U attrition -d attrition_serving \
   -c "SELECT id, created_at, employee_id, proba_depart, prediction, threshold, model_version FROM predictions ORDER BY created_at DESC LIMIT 10;"
 ```
 
-## What the log guarantees
+## What the log records
 
-Every prediction writes one row, and rows are never updated. The exact payload is kept in
-`input_payload`, so a decision can be replayed against the exact input that produced it.
-`model_version` and `threshold` travel with the probability, so a decision taken six months
-ago can be explained without guessing which model made it. A row holding only the probability
-would not show what the service decided.
+Each row of `predictions` is one decision that the service managed to write, and the service
+never updates a row. `input_payload` holds the payload exactly as it was scored, so the
+decision can be recomputed from it with the same model. `model_version` and `threshold` are
+stored with the probability, so a decision taken months earlier can be explained without
+guessing which model and which threshold produced it.
+
+Two operations remove rows. The seed script empties both tables in the local setup, as
+described above, and the integration tests empty `predictions` before each test on the
+database they connect to.
