@@ -263,29 +263,21 @@ along with the main engineering decisions.
 └── tests/                   unit, integration, system; the integration tier skips in 3 s
 ```
 
-## What this does not prove
+## Scope
 
 <!-- source: reports/evaluation_summary.json -->
-**n = 1 470 rows at a base rate of 0.161.** Repeating the cross-validation makes each average
-less dependent on how the folds were drawn. The information available is still that of 1 470
-rows. The fold-to-fold spread of average precision is 0.058, and notebook 05 gives that spread
-as the reason its hyper-parameter search is limited to a small grid. No boosted model appears in
-the repository.
+**The sample.** The dataset has 1 470 rows at a base rate of 0.161. The fold-to-fold spread of
+average precision is 0.058, and notebook 05 gives that spread as the reason its hyper-parameter
+search stays on a small grid.
 
-**The ratio of eight conversations per missed departure is an assumption.** The shipped
-threshold is only as well justified as that ratio.
+**The threshold** follows from an assumed ratio of eight conversations per missed departure.
 
-**The model makes no causal claim.** A column that distinguishes leavers from stayers can be
-a consequence of the decision to leave, for example when an employee who plans to leave stops
-asking for training. A single cross-section cannot separate cause from consequence, and the
-risk ranking gives no indication of what would make an employee stay.
+**The model ranks risk.** A column that distinguishes leavers from stayers can be a consequence of
+the decision to leave, so the ranking describes associations, and the subgroup table records the
+recall gap between two marital statuses.
 
-**The subgroup table is a description.** It records a recall gap between two marital statuses.
-It does not explain the gap, and no code in the repository corrects it.
-
-**Drift is not monitored.** Before the model is used on a later year of employees, someone would
-have to score them and examine the result. [`docs/operations.md`](docs/operations.md) names the
-signal to examine, in the third step of its troubleshooting list.
+**Before scoring a later year,** [`docs/operations.md`](docs/operations.md) names the signal to
+examine, in the third step of its troubleshooting list.
 
 ## Licence and data
 
